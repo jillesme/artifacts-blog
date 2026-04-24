@@ -2,8 +2,14 @@
  * Git operations against Cloudflare Artifacts repos, from a Worker.
  *
  * Artifacts exposes each repo as a standard Git HTTPS remote. We use
- * isomorphic-git + an in-memory filesystem to clone, read, edit, commit
- * and push — entirely from the Worker request handler.
+ * isomorphic-git to clone, read, edit, commit and push — entirely from
+ * the Worker request handler.
+ *
+ * Filesystem: we use Workers' built-in `node:fs` virtual filesystem.
+ *   - Enabled automatically with `nodejs_compat` + compatibility_date ≥ 2025-09-01
+ *   - Per-request in-memory `/tmp` that counts toward the Worker memory budget
+ *   - Zero extra dependencies — no hand-rolled MemoryFS needed
+ *   Docs: https://developers.cloudflare.com/workers/runtime-apis/nodejs/fs/
  *
  * Why not store content in KV or R2?
  *   Because then "history", "diff", "fork", and "git clone from your blog"
@@ -11,20 +17,28 @@
  *   us for free.
  */
 
+import fs from 'node:fs'
 import git from 'isomorphic-git'
 import http from 'isomorphic-git/http/web'
-import { MemoryFS } from './memoryFS'
 
 export const AUTHOR = {
   name: 'Artifacts Blog',
   email: 'blog@artifacts.example',
 }
 
-export const WORKDIR = '/repo'
 export const POST_FILE = 'post.md'
 export const META_FILE = 'meta.json'
 
-/** Strip the `?expires=<unix>` suffix that Artifacts tokens sometimes carry. */
+/**
+ * Each git operation gets its own fresh workdir under /tmp. The Workers VFS
+ * is per-request, but using unique subdirs also guards against reentrancy
+ * (e.g. a server function doing two reads in parallel).
+ */
+function newWorkdir(): string {
+  return `/tmp/artifacts-${crypto.randomUUID()}`
+}
+
+/** Strip the `?expires=<unix>` suffix that Artifacts tokens carry. */
 export function cleanToken(token: string): string {
   return token.split('?expires=')[0]
 }
@@ -90,26 +104,27 @@ export async function createPostRepo(
   })
   const token = created.token
 
-  const fs = new MemoryFS()
-  await git.init({ fs, dir: WORKDIR, defaultBranch: 'main' })
+  const dir = newWorkdir()
+  await fs.promises.mkdir(dir, { recursive: true })
+  await git.init({ fs, dir, defaultBranch: 'main' })
 
-  await fs.promises.writeFile(`${WORKDIR}/${POST_FILE}`, body)
+  await fs.promises.writeFile(`${dir}/${POST_FILE}`, body)
   await fs.promises.writeFile(
-    `${WORKDIR}/${META_FILE}`,
+    `${dir}/${META_FILE}`,
     JSON.stringify(meta, null, 2) + '\n',
   )
   await fs.promises.writeFile(
-    `${WORKDIR}/README.md`,
+    `${dir}/README.md`,
     `# ${meta.title}\n\nThis post lives in a Cloudflare Artifacts repo.\n\nClone it, edit \`post.md\`, and push to suggest changes.\n`,
   )
 
-  await git.add({ fs, dir: WORKDIR, filepath: POST_FILE })
-  await git.add({ fs, dir: WORKDIR, filepath: META_FILE })
-  await git.add({ fs, dir: WORKDIR, filepath: 'README.md' })
+  await git.add({ fs, dir, filepath: POST_FILE })
+  await git.add({ fs, dir, filepath: META_FILE })
+  await git.add({ fs, dir, filepath: 'README.md' })
 
   const sha = await git.commit({
     fs,
-    dir: WORKDIR,
+    dir,
     message: `Publish: ${meta.title}`,
     author: AUTHOR,
   })
@@ -117,7 +132,7 @@ export async function createPostRepo(
   await git.push({
     fs,
     http,
-    dir: WORKDIR,
+    dir,
     url: created.remote,
     ref: 'main',
     onAuth: authFor(token),
@@ -128,7 +143,7 @@ export async function createPostRepo(
 
 /**
  * Read `post.md` + `meta.json` from the repo at a given commit (or tip of main).
- * We do a shallow fetch, which is fast enough for blog-sized repos.
+ * We do a shallow clone, which is fast enough for blog-sized repos.
  */
 export async function readPost(
   env: Env,
@@ -137,11 +152,12 @@ export async function readPost(
   atSha?: string,
 ): Promise<RenderedPost> {
   const token = await mintReadToken(env, repoName)
-  const fs = new MemoryFS()
+  const dir = newWorkdir()
+  await fs.promises.mkdir(dir, { recursive: true })
   await git.clone({
     fs,
     http,
-    dir: WORKDIR,
+    dir,
     url: remote,
     ref: 'main',
     singleBranch: true,
@@ -151,12 +167,12 @@ export async function readPost(
 
   let oid = atSha
   if (!oid) {
-    oid = await git.resolveRef({ fs, dir: WORKDIR, ref: 'main' })
+    oid = await git.resolveRef({ fs, dir, ref: 'main' })
   }
 
   const postBytes = await git.readBlob({
     fs,
-    dir: WORKDIR,
+    dir,
     oid,
     filepath: POST_FILE,
   })
@@ -164,7 +180,7 @@ export async function readPost(
   try {
     const metaBytes = await git.readBlob({
       fs,
-      dir: WORKDIR,
+      dir,
       oid,
       filepath: META_FILE,
     })
@@ -194,11 +210,12 @@ export async function updatePost(
   message: string,
 ): Promise<string> {
   const token = await mintWriteToken(env, repoName)
-  const fs = new MemoryFS()
+  const dir = newWorkdir()
+  await fs.promises.mkdir(dir, { recursive: true })
   await git.clone({
     fs,
     http,
-    dir: WORKDIR,
+    dir,
     url: remote,
     ref: 'main',
     singleBranch: true,
@@ -206,18 +223,18 @@ export async function updatePost(
     onAuth: authFor(token),
   })
 
-  await fs.promises.writeFile(`${WORKDIR}/${POST_FILE}`, body)
+  await fs.promises.writeFile(`${dir}/${POST_FILE}`, body)
   await fs.promises.writeFile(
-    `${WORKDIR}/${META_FILE}`,
+    `${dir}/${META_FILE}`,
     JSON.stringify(meta, null, 2) + '\n',
   )
 
-  await git.add({ fs, dir: WORKDIR, filepath: POST_FILE })
-  await git.add({ fs, dir: WORKDIR, filepath: META_FILE })
+  await git.add({ fs, dir, filepath: POST_FILE })
+  await git.add({ fs, dir, filepath: META_FILE })
 
   const sha = await git.commit({
     fs,
-    dir: WORKDIR,
+    dir,
     message,
     author: AUTHOR,
   })
@@ -225,7 +242,7 @@ export async function updatePost(
   await git.push({
     fs,
     http,
-    dir: WORKDIR,
+    dir,
     url: remote,
     ref: 'main',
     onAuth: authFor(token),
@@ -244,18 +261,19 @@ export async function readHistory(
   depth = 50,
 ): Promise<CommitEntry[]> {
   const token = await mintReadToken(env, repoName)
-  const fs = new MemoryFS()
+  const dir = newWorkdir()
+  await fs.promises.mkdir(dir, { recursive: true })
   await git.clone({
     fs,
     http,
-    dir: WORKDIR,
+    dir,
     url: remote,
     ref: 'main',
     singleBranch: true,
     depth,
     onAuth: authFor(token),
   })
-  const log = await git.log({ fs, dir: WORKDIR, depth })
+  const log = await git.log({ fs, dir, depth })
   return log.map((c) => ({
     sha: c.oid,
     message: c.commit.message.trim(),
@@ -281,19 +299,20 @@ export async function forkPostRepo(
   })
 
   // The fork starts at the same SHA as the source's default branch.
-  // Resolve it by doing a minimal ls-remote-ish clone of just refs.
+  // Resolve it by doing a minimal shallow clone.
   const token = forked.token
-  const fs = new MemoryFS()
+  const dir = newWorkdir()
+  await fs.promises.mkdir(dir, { recursive: true })
   await git.clone({
     fs,
     http,
-    dir: WORKDIR,
+    dir,
     url: forked.remote,
     ref: 'main',
     singleBranch: true,
     depth: 1,
     onAuth: authFor(token),
   })
-  const sha = await git.resolveRef({ fs, dir: WORKDIR, ref: 'main' })
+  const sha = await git.resolveRef({ fs, dir, ref: 'main' })
   return { repoName: forked.name, remote: forked.remote, sha }
 }
