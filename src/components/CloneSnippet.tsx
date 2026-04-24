@@ -35,8 +35,10 @@ export default function CloneSnippet({ slug }: Props) {
   }
 
   const secret = info ? info.token.split('?expires=')[0] : ''
+  // `--config` (unlike `-c`) persists the header into the cloned repo's
+  // .git/config so subsequent `git push` / `git fetch` reuse it automatically.
   const command = info
-    ? `git -c http.extraHeader="Authorization: Bearer ${secret}" clone ${info.remote}`
+    ? `git clone --config http.extraHeader="Authorization: Bearer ${secret}" ${info.remote}`
     : ''
 
   async function copy() {
@@ -84,6 +86,12 @@ export default function CloneSnippet({ slug }: Props) {
       <pre className="terminal">
         <code>{command}</code>
       </pre>
+
+      <p className="mt-2 text-[12px] leading-relaxed text-[var(--ink-faint)]">
+        Then edit, <code>git commit -am "…"</code>, and{' '}
+        <code>git push</code>. The token is stored in the cloned repo's{' '}
+        <code>.git/config</code>, so pushes work without re-typing it.
+      </p>
 
       <aside
         role="note"
