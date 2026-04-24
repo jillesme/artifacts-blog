@@ -19,7 +19,12 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'Artifacts Blog — a Git-backed blog on Cloudflare',
+      },
+      {
+        name: 'description',
+        content:
+          'A tiny demo blog where every post is a real Cloudflare Artifacts Git repo — with history, forks, and git clone included.',
       },
     ],
     links: [
