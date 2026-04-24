@@ -62,10 +62,12 @@ export default function ThemeToggle() {
     window.localStorage.setItem('theme', nextMode)
   }
 
+  // Glyphs evoke sun / crescent moon / half-lit — hand-chosen, not icon-library.
+  const glyph = mode === 'light' ? '☀' : mode === 'dark' ? '☾' : '◐'
   const label =
     mode === 'auto'
-      ? 'Theme mode: auto (system). Click to switch to light mode.'
-      : `Theme mode: ${mode}. Click to switch mode.`
+      ? 'Theme: auto (follows system). Click to switch to light.'
+      : `Theme: ${mode}. Click to cycle.`
 
   return (
     <button
@@ -73,9 +75,14 @@ export default function ThemeToggle() {
       onClick={toggleMode}
       aria-label={label}
       title={label}
-      className="rounded-full border border-[var(--chip-line)] bg-[var(--chip-bg)] px-3 py-1.5 text-sm font-semibold text-[var(--sea-ink)] shadow-[0_8px_22px_rgba(30,90,72,0.08)] transition hover:-translate-y-0.5"
+      className="folio inline-flex items-center gap-2 border border-[var(--rule)] bg-transparent px-2.5 py-1.5 text-[var(--ink-soft)] transition hover:border-[var(--ink)] hover:text-[var(--ink)]"
     >
-      {mode === 'auto' ? 'Auto' : mode === 'dark' ? 'Dark' : 'Light'}
+      <span aria-hidden className="text-base leading-none">
+        {glyph}
+      </span>
+      <span className="hidden sm:inline">
+        {mode === 'auto' ? 'Auto' : mode}
+      </span>
     </button>
   )
 }

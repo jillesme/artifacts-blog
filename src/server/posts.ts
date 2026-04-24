@@ -249,8 +249,12 @@ export const forkPost = createServerFn({ method: 'POST' })
   })
 
 /**
- * Mint a short-lived read token so a visitor can `git clone` the post.
- * This is the "git clone your blog post" demo.
+ * Mint a short-lived read/write token so a visitor can both `git clone` and
+ * `git push` to the post's repo.
+ *
+ * NOTE: this is a public, unauthenticated demo — anyone loading the post page
+ * can request a token and push commits directly to `main`. Don't reuse this
+ * pattern verbatim for anything with real editorial authority.
  */
 export const mintCloneToken = createServerFn({ method: 'POST' })
   .inputValidator((data: { slug: string }) => data)
@@ -258,7 +262,7 @@ export const mintCloneToken = createServerFn({ method: 'POST' })
     const post = await getPostBySlug(data.slug)
     if (!post) throw new Error(`Post not found: ${data.slug}`)
     const repo = await env.ARTIFACTS.get(post.repo_name)
-    const token = await repo.createToken('read', 900)
+    const token = await repo.createToken('write', 900)
     return {
       remote: post.remote,
       token: token.plaintext,

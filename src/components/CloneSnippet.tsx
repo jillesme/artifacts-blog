@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { mintCloneToken } from '../server/posts'
-import { Copy, Check, Terminal } from 'lucide-react'
+import { Copy, Check } from 'lucide-react'
 
 interface Props {
   slug: string
 }
 
 /**
- * The "git clone your post" button. On click we ask the Worker to mint a
- * short-lived read-scoped Artifacts token for this repo, then show the
- * ready-to-paste command.
+ * The "git clone your post" block. On click we ask the Worker to mint a
+ * short-lived read-scoped Artifacts token for this repo, then render the
+ * ready-to-paste command in a terminal-style block.
  */
 export default function CloneSnippet({ slug }: Props) {
   const [info, setInfo] = useState<{
@@ -48,31 +48,22 @@ export default function CloneSnippet({ slug }: Props) {
 
   if (!info) {
     return (
-      <div className="island-shell flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4">
-        <div className="flex items-center gap-3">
-          <Terminal className="h-4 w-4 text-[var(--lagoon-deep)]" />
-          <div>
-            <p className="m-0 text-sm font-semibold text-[var(--sea-ink)]">
-              git clone this post
-            </p>
-            <p className="m-0 text-xs text-[var(--sea-ink-soft)]">
-              Mint a 15-minute read token, get a ready-to-paste command.
+      <section className="border-y border-[var(--rule)] py-6" aria-label="Clone this entry">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div className="max-w-md">
+            <p className="smallcaps mb-1">Take it with you</p>
+            <p className="m-0 text-[15px] leading-relaxed text-[var(--ink-soft)]">
+              Mint a 15-minute read/write token and get a ready-to-paste{' '}
+              <code>git clone</code> command. This entry is a real remote;
+              clone it, edit offline, and <code>git push</code> to update it.
             </p>
           </div>
+          <button onClick={mint} disabled={busy} className="btn-ghost">
+            {busy ? 'Minting…' : 'Mint clone command'}
+          </button>
         </div>
-        <button
-          onClick={mint}
-          disabled={busy}
-          className="rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.14)] px-4 py-1.5 text-xs font-semibold text-[var(--lagoon-deep)] transition hover:bg-[rgba(79,184,178,0.24)] disabled:opacity-60"
-        >
-          {busy ? 'Minting…' : 'Generate command'}
-        </button>
-        {error ? (
-          <p className="m-0 w-full text-xs text-red-600 dark:text-red-300">
-            {error}
-          </p>
-        ) : null}
-      </div>
+        {error ? <p className="note-error mt-3">{error}</p> : null}
+      </section>
     )
   }
 
@@ -82,38 +73,55 @@ export default function CloneSnippet({ slug }: Props) {
   )
 
   return (
-    <div className="island-shell rounded-2xl p-4">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <p className="m-0 text-sm font-semibold text-[var(--sea-ink)]">
-          git clone this post
-        </p>
-        <span className="rounded-full border border-[var(--chip-line)] bg-[var(--chip-bg)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--palm)]">
-          token expires in ~{expiresIn} min
+    <section className="border-y border-[var(--rule)] py-6" aria-label="Clone this entry">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <p className="smallcaps m-0">Clone this entry</p>
+        <span className="tag tag-accent">
+          Token expires in ~{expiresIn} min
         </span>
       </div>
-      <pre className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3 text-xs leading-6 text-[var(--sea-ink)]">
-        <code className="border-0 bg-transparent p-0">{command}</code>
+
+      <pre className="terminal">
+        <code>{command}</code>
       </pre>
-      <div className="mt-2 flex items-center justify-between">
-        <p className="m-0 text-[11px] text-[var(--sea-ink-soft)]">
-          Token is read-only and scoped to this repo. After it expires, mint
-          another one.
+
+      <aside
+        role="note"
+        className="mt-3 border-l-2 border-[var(--oxblood)] bg-[color-mix(in_oklab,var(--oxblood)_8%,var(--parchment-hi))] px-3.5 py-2.5 text-[13px] leading-relaxed text-[var(--ink)]"
+      >
+        <strong
+          className="font-display font-semibold uppercase tracking-[0.14em] text-[var(--oxblood)]"
+          style={{ fontSize: '0.72rem' }}
+        >
+          Demo notice ·{' '}
+        </strong>
+        This token is <strong>read/write</strong> and scoped to this repo.
+        Anyone holding it can <code>git push</code> to <code>main</code> for
+        the next ~{expiresIn} minutes. The blog has no auth — that's
+        intentional for the demo. If this were production, you'd gate token
+        minting behind a real identity.
+      </aside>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <p className="m-0 text-[13px] leading-relaxed text-[var(--ink-soft)]">
+          When it expires, mint another — or fork the entry to get your own
+          independent repo.
         </p>
         <button
           onClick={copy}
-          className="inline-flex items-center gap-1 rounded-full border border-[var(--chip-line)] bg-[var(--chip-bg)] px-3 py-1 text-[11px] font-semibold text-[var(--sea-ink)]"
+          className="folio inline-flex items-center gap-2 border border-[var(--rule)] bg-transparent px-3 py-1.5 text-[var(--ink)] transition hover:border-[var(--ink)]"
         >
           {copied ? (
             <>
-              <Check className="h-3 w-3" /> Copied
+              <Check className="h-3.5 w-3.5" /> Copied
             </>
           ) : (
             <>
-              <Copy className="h-3 w-3" /> Copy
+              <Copy className="h-3.5 w-3.5" /> Copy
             </>
           )}
         </button>
       </div>
-    </div>
+    </section>
   )
 }

@@ -39,7 +39,11 @@ function NewPost() {
           body,
         },
       })
-      navigate({ to: '/posts/$slug', params: { slug: result.slug }, search: { v: undefined } })
+      navigate({
+        to: '/posts/$slug',
+        params: { slug: result.slug },
+        search: { v: undefined },
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
       setBusy(false)
@@ -47,91 +51,76 @@ function NewPost() {
   }
 
   return (
-    <main className="page-wrap px-4 py-10">
-      <section className="island-shell rounded-2xl p-6 sm:p-8">
-        <p className="island-kicker mb-2">New post</p>
-        <h1 className="display-title mb-2 text-3xl font-bold text-[var(--sea-ink)] sm:text-4xl">
-          Create a post
+    <main className="measure px-4 pb-16 pt-10 sm:pt-14">
+      <header className="ink-in mb-10">
+        <p className="folio mb-4">The compositor · new entry</p>
+        <h1 className="display text-[clamp(2.5rem,6vw,4rem)] font-semibold text-[var(--ink)]">
+          Set a new entry in type.
         </h1>
-        <p className="mb-6 text-sm text-[var(--sea-ink-soft)]">
-          Submitting this form creates a brand-new Artifacts repo, writes{' '}
-          <code>post.md</code> + <code>meta.json</code>, and pushes{' '}
-          <code>main</code>. The returned commit SHA is stored in D1.
+        <p className="byline mt-5 text-lg leading-relaxed text-[var(--ink-soft)]">
+          Filling this form creates a fresh Artifacts repository, writes{' '}
+          <code>post.md</code> & <code>meta.json</code>, and pushes the first
+          commit to <code>main</code>.
         </p>
+        <div className="mt-6 h-px bg-[var(--rule)]" />
+      </header>
 
-        <form onSubmit={onSubmit} className="flex flex-col gap-4">
-          <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--sea-ink-soft)]">
-              Title
-            </span>
+      <form onSubmit={onSubmit} className="flex flex-col gap-6">
+        <label className="field">
+          <span className="field-label">Title</span>
+          <input
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="field-input"
+            placeholder="On forking a blog post"
+          />
+        </label>
+
+        <div className="grid gap-6 sm:grid-cols-2">
+          <label className="field">
+            <span className="field-label">Author</span>
             <input
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-[var(--sea-ink)] outline-none focus:border-[var(--lagoon-deep)]"
-              placeholder="On forking a blog post"
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
+              className="field-input"
+              placeholder="Anonymous"
             />
           </label>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--sea-ink-soft)]">
-                Author
-              </span>
-              <input
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-                className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-[var(--sea-ink)] outline-none focus:border-[var(--lagoon-deep)]"
-                placeholder="anonymous"
-              />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--sea-ink-soft)]">
-                Summary (optional)
-              </span>
-              <input
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-[var(--sea-ink)] outline-none focus:border-[var(--lagoon-deep)]"
-                placeholder="One sentence pitch"
-              />
-            </label>
-          </div>
-
-          <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--sea-ink-soft)]">
-              Body (Markdown)
-            </span>
-            <textarea
-              required
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={16}
-              className="min-h-[320px] rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] px-3 py-2 font-mono text-sm text-[var(--sea-ink)] outline-none focus:border-[var(--lagoon-deep)]"
+          <label className="field">
+            <span className="field-label">Summary · optional</span>
+            <input
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              className="field-input"
+              placeholder="One sentence pitch"
             />
           </label>
+        </div>
 
-          {error ? (
-            <p className="rounded-xl border border-red-300/40 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-200">
-              {error}
-            </p>
-          ) : null}
+        <label className="field">
+          <span className="field-label">Body · Markdown</span>
+          <textarea
+            required
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={18}
+            className="field-textarea"
+          />
+        </label>
 
-          <div className="flex items-center gap-3">
-            <button
-              type="submit"
-              disabled={busy}
-              className="rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.2)] px-5 py-2.5 text-sm font-semibold text-[var(--lagoon-deep)] transition hover:-translate-y-0.5 hover:bg-[rgba(79,184,178,0.34)] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {busy ? 'Creating repo + pushing commit…' : 'Create post'}
-            </button>
-            <p className="m-0 text-xs text-[var(--sea-ink-soft)]">
-              We'll spin up a new repo named{' '}
-              <code>post-&lt;slug&gt;-&lt;nonce&gt;</code>.
-            </p>
-          </div>
-        </form>
-      </section>
+        {error ? <p className="note-error">{error}</p> : null}
+
+        <div className="flex flex-wrap items-center gap-5 border-t border-[var(--rule)] pt-6">
+          <button type="submit" disabled={busy} className="btn-primary">
+            {busy ? 'Pushing first commit…' : 'Set & publish'}
+          </button>
+          <p className="m-0 text-sm leading-relaxed text-[var(--ink-soft)]">
+            A new repo, <code>post-&lt;slug&gt;-&lt;nonce&gt;</code>, will be
+            provisioned on Cloudflare Artifacts.
+          </p>
+        </div>
+      </form>
     </main>
   )
 }

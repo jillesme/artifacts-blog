@@ -22,11 +22,13 @@ export const Route = createFileRoute('/posts/$slug/')({
 })
 
 function formatDate(ts: number): string {
-  return new Date(ts).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
+  return new Date(ts)
+    .toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+    .toUpperCase()
 }
 
 function PostView() {
@@ -40,7 +42,11 @@ function PostView() {
     setError(null)
     try {
       const res = await forkPost({ data: { slug: view.post.slug } })
-      navigate({ to: '/posts/$slug', params: { slug: res.slug }, search: { v: undefined } })
+      navigate({
+        to: '/posts/$slug',
+        params: { slug: res.slug },
+        search: { v: undefined },
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
       setForking(false)
@@ -48,106 +54,125 @@ function PostView() {
   }
 
   return (
-    <main className="page-wrap px-4 py-10">
-      <div className="mb-4">
-        <Link
-          to="/"
-          className="text-xs font-semibold uppercase tracking-wider text-[var(--sea-ink-soft)] no-underline hover:text-[var(--sea-ink)]"
-        >
-          ← All posts
+    <main className="measure px-4 pb-16 pt-10 sm:pt-14">
+      <div className="mb-8">
+        <Link to="/" className="folio no-underline hover:text-[var(--ink)]">
+          ← Return to the index
         </Link>
       </div>
 
       {view.isHistorical ? (
-        <div className="island-shell mb-6 rounded-2xl border-l-4 border-l-[var(--lagoon-deep)] p-4 text-sm">
-          <p className="m-0 text-[var(--sea-ink)]">
-            <strong>Viewing a past version</strong> of this post at commit{' '}
+        <aside
+          className="mb-10 border-y border-[var(--rule)] py-4 text-sm leading-relaxed"
+          role="note"
+        >
+          <p className="smallcaps mb-1">An earlier draft</p>
+          <p className="m-0 text-[var(--ink-soft)]">
+            You are reading this entry at commit{' '}
             <code>{view.sha.slice(0, 7)}</code>.{' '}
             <Link
               to="/posts/$slug"
               params={{ slug: view.post.slug }}
               search={{ v: undefined }}
-              className="font-semibold"
+              className="font-medium"
             >
-              Return to the latest version →
+              Return to the latest revision →
             </Link>
           </p>
-        </div>
+        </aside>
       ) : null}
 
-      <article className="island-shell rounded-2xl p-6 sm:p-10">
-        <div className="mb-6 flex flex-wrap items-baseline gap-3 text-xs text-[var(--sea-ink-soft)]">
-          <span className="island-kicker m-0">
-            {formatDate(view.post.created_at)}
-          </span>
-          <span>by {view.post.author}</span>
+      {/* ── Article head ──────────────────────────────────────────── */}
+      <header className="ink-in mb-10">
+        <p className="folio mb-4">
+          {formatDate(view.post.created_at)} · by{' '}
+          <span className="text-[var(--ink-soft)]">{view.post.author}</span>
           {view.post.forked_from ? (
-            <span className="rounded-full border border-[var(--chip-line)] bg-[var(--chip-bg)] px-2 py-0.5 font-semibold text-[var(--palm)]">
-              forked from{' '}
-              <Link
-                to="/posts/$slug"
-                params={{ slug: view.post.forked_from }}
-                search={{ v: undefined }}
-                className="underline"
-              >
-                {view.post.forked_from}
-              </Link>
-            </span>
+            <>
+              {' · '}
+              <span className="normal-case tracking-normal">
+                forked from{' '}
+                <Link
+                  to="/posts/$slug"
+                  params={{ slug: view.post.forked_from }}
+                  search={{ v: undefined }}
+                >
+                  {view.post.forked_from}
+                </Link>
+              </span>
+            </>
           ) : null}
-          <span className="ml-auto rounded-full border border-[var(--chip-line)] bg-[var(--chip-bg)] px-2 py-0.5 font-mono text-[10px] uppercase text-[var(--sea-ink-soft)]">
-            {view.sha.slice(0, 7)}
-          </span>
-        </div>
+        </p>
 
-        <h1 className="display-title mb-4 text-4xl font-bold leading-tight text-[var(--sea-ink)] sm:text-5xl">
+        <h1 className="display text-[clamp(2.5rem,6vw,4.5rem)] font-semibold text-[var(--ink)]">
           {view.post.title}
         </h1>
 
         {view.post.summary ? (
-          <p className="mb-6 text-lg text-[var(--sea-ink-soft)]">
+          <p className="byline mt-5 text-xl leading-relaxed text-[var(--ink-soft)] sm:text-2xl">
             {view.post.summary}
           </p>
         ) : null}
 
-        <div
-          className="prose prose-sm sm:prose-base max-w-none text-[var(--sea-ink)] prose-headings:font-bold prose-headings:text-[var(--sea-ink)] prose-strong:text-[var(--sea-ink)] prose-a:text-[var(--lagoon-deep)] prose-code:rounded-md prose-code:border prose-code:border-[var(--line)] prose-code:bg-[var(--surface-strong)] prose-code:px-1.5 prose-code:py-0.5 prose-code:text-[0.85em] prose-code:before:content-none prose-code:after:content-none"
-          dangerouslySetInnerHTML={{ __html: view.html }}
-        />
+        <div className="mt-6 flex items-center gap-3">
+          <span className="tag tag-accent">@{view.sha.slice(0, 7)}</span>
+          <div className="h-px flex-1 bg-[var(--rule)]" />
+        </div>
+      </header>
 
-        <hr className="my-8 border-[var(--line)]" />
+      {/* ── Article body ──────────────────────────────────────────── */}
+      <article
+        className="editorial-body prose prose-lg max-w-none text-[var(--ink)]
+          prose-headings:font-display prose-headings:text-[var(--ink)]
+          prose-headings:tracking-tight
+          prose-p:leading-[1.75]
+          prose-p:text-[var(--ink)]
+          prose-strong:text-[var(--ink)] prose-strong:font-semibold
+          prose-em:text-[var(--ink)]
+          prose-a:text-[var(--oxblood)] prose-a:underline prose-a:decoration-1 prose-a:underline-offset-2
+          prose-blockquote:border-l-2 prose-blockquote:border-[var(--oxblood)]
+          prose-blockquote:text-[var(--ink-soft)] prose-blockquote:font-normal prose-blockquote:not-italic
+          prose-code:bg-[var(--parchment-deep)] prose-code:border prose-code:border-[var(--rule-soft)]
+          prose-code:px-1.5 prose-code:py-[1px] prose-code:text-[0.9em] prose-code:rounded-none
+          prose-code:text-[var(--ink)] prose-code:before:content-none prose-code:after:content-none
+          prose-pre:bg-[var(--umber)] prose-pre:text-[var(--parchment-hi)] prose-pre:rounded-none
+          prose-hr:border-[var(--rule)]
+          prose-li:text-[var(--ink)]"
+        dangerouslySetInnerHTML={{ __html: view.html }}
+      />
 
-        <div className="flex flex-wrap gap-2">
+      <div className="dinkus" aria-hidden>
+        ❦
+      </div>
+
+      {/* ── Article footer: actions ──────────────────────────────── */}
+      <section
+        aria-label="Entry actions"
+        className="border-y border-[var(--rule)] py-5"
+      >
+        <div className="flex flex-wrap items-center gap-3">
           <Link
             to="/posts/$slug/edit"
             params={{ slug: view.post.slug }}
-            className="rounded-full border border-[var(--chip-line)] bg-[var(--chip-bg)] px-4 py-1.5 text-xs font-semibold text-[var(--sea-ink)] no-underline"
+            className="btn-ghost"
           >
             Edit (new commit)
           </Link>
           <Link
             to="/posts/$slug/history"
             params={{ slug: view.post.slug }}
-            className="rounded-full border border-[var(--chip-line)] bg-[var(--chip-bg)] px-4 py-1.5 text-xs font-semibold text-[var(--sea-ink)] no-underline"
+            className="btn-ghost"
           >
-            History
+            Revisions
           </Link>
-          <button
-            onClick={onFork}
-            disabled={forking}
-            className="rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.14)] px-4 py-1.5 text-xs font-semibold text-[var(--lagoon-deep)] disabled:opacity-60"
-          >
-            {forking ? 'Forking repo…' : 'Fork this post'}
+          <button onClick={onFork} disabled={forking} className="btn-primary">
+            {forking ? 'Forking the repo…' : 'Fork this entry'}
           </button>
         </div>
+        {error ? <p className="note-error mt-4">{error}</p> : null}
+      </section>
 
-        {error ? (
-          <p className="mt-4 rounded-xl border border-red-300/40 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-200">
-            {error}
-          </p>
-        ) : null}
-      </article>
-
-      <div className="mt-6">
+      <div className="mt-8">
         <CloneSnippet slug={view.post.slug} />
       </div>
     </main>
