@@ -49,6 +49,44 @@ export interface PostView {
   isHistorical: boolean
 }
 
+export interface AdminPostRow extends PostRow {
+  fork_count: number
+}
+
+export interface AdminRepoRow {
+  id: string
+  name: string
+  description: string | null
+  defaultBranch: string
+  createdAt: string
+  updatedAt: string
+  lastPushAt: string | null
+  source: string | null
+  readOnly: boolean
+  indexedSlug: string | null
+}
+
+export interface AdminState {
+  posts: AdminPostRow[]
+  repos: AdminRepoRow[]
+  adminKeyConfigured: boolean
+}
+
+export interface DeleteFamilyResult {
+  rootSlug: string
+  deletedPosts: PostRow[]
+  deletedRepos: { name: string; deleted: boolean }[]
+}
+
+export interface DeleteRepoResult {
+  repoName: string
+  deleted: boolean
+}
+
+export interface DeleteOrphansResult {
+  deletedRepos: { name: string; deleted: boolean }[]
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -91,6 +129,53 @@ async function getPostBySlug(slug: string): Promise<PostRow | null> {
     .bind(slug)
     .first<PostRow>()
   return row ?? null
+}
+
+function configuredAdminKey(): string | null {
+  const configured = (env as typeof env & { ADMIN_DELETE_KEY?: string })
+    .ADMIN_DELETE_KEY
+  const trimmed = configured?.trim()
+  return trimmed ? trimmed : null
+}
+
+function assertAdmin(inputKey?: string): void {
+  const configured = configuredAdminKey()
+  if (!configured) return
+  if (inputKey !== configured) {
+    throw new Error('Admin key required')
+  }
+}
+
+async function getPostFamily(rootSlug: string): Promise<PostRow[]> {
+  const result = await env.DB.prepare(
+    `WITH RECURSIVE family AS (
+       SELECT * FROM posts WHERE slug = ?
+       UNION
+       SELECT p.* FROM posts p
+       JOIN family f ON p.forked_from = f.slug
+     )
+     SELECT * FROM family ORDER BY created_at ASC`,
+  )
+    .bind(rootSlug)
+    .all<PostRow>()
+
+  return (result.results ?? []) as PostRow[]
+}
+
+async function deletePostFamilyRows(rootSlug: string): Promise<number> {
+  const result = await env.DB.prepare(
+    `WITH RECURSIVE family(slug) AS (
+       SELECT slug FROM posts WHERE slug = ?
+       UNION
+       SELECT p.slug FROM posts p
+       JOIN family f ON p.forked_from = f.slug
+     )
+     DELETE FROM posts WHERE slug IN (SELECT slug FROM family)`,
+  )
+    .bind(rootSlug)
+    .run()
+
+  return result.meta.changes ?? 0
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -268,4 +353,158 @@ export const mintCloneToken = createServerFn({ method: 'POST' })
       token: token.plaintext,
       expiresAt: token.expiresAt,
     }
+  })
+
+export const listAdminState = createServerFn({ method: 'GET' })
+  .inputValidator((data?: { adminKey?: string }) => data ?? {})
+  .handler(async ({ data }): Promise<AdminState> => {
+    assertAdmin(data.adminKey)
+
+    const postResult = await env.DB.prepare(
+      `SELECT p.*,
+              (SELECT COUNT(*) FROM posts child WHERE child.forked_from = p.slug) AS fork_count
+       FROM posts p
+       ORDER BY p.created_at DESC
+       LIMIT 500`,
+    ).all<AdminPostRow>()
+    const posts = (postResult.results ?? []) as AdminPostRow[]
+
+    const slugByRepo = new Map(posts.map((post) => [post.repo_name, post.slug]))
+    const repos: AdminRepoRow[] = []
+    let cursor: string | undefined
+    do {
+      const page = await env.ARTIFACTS.list({ limit: 200, cursor })
+      repos.push(
+        ...page.repos.map((repo) => ({
+          id: repo.id,
+          name: repo.name,
+          description: repo.description,
+          defaultBranch: repo.defaultBranch,
+          createdAt: repo.createdAt,
+          updatedAt: repo.updatedAt,
+          lastPushAt: repo.lastPushAt,
+          source: repo.source,
+          readOnly: repo.readOnly,
+          indexedSlug: slugByRepo.get(repo.name) ?? null,
+        })),
+      )
+      cursor = page.cursor
+    } while (cursor)
+
+    return {
+      posts,
+      repos,
+      adminKeyConfigured: Boolean(configuredAdminKey()),
+    }
+  })
+
+export const previewDeleteFamily = createServerFn({ method: 'GET' })
+  .inputValidator((data: { slug: string; adminKey?: string }) => data)
+  .handler(async ({ data }): Promise<PostRow[]> => {
+    assertAdmin(data.adminKey)
+    const family = await getPostFamily(data.slug)
+    if (family.length === 0) throw new Error(`Post not found: ${data.slug}`)
+    return family
+  })
+
+export const deletePostFamily = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (data: { slug: string; confirm: string; adminKey?: string }) => data,
+  )
+  .handler(async ({ data }): Promise<DeleteFamilyResult> => {
+    assertAdmin(data.adminKey)
+
+    const slug = data.slug.trim()
+    if (!slug) throw new Error('Slug is required')
+    if (data.confirm !== `DELETE ${slug}`) {
+      throw new Error(`Type DELETE ${slug} to confirm`)
+    }
+
+    const family = await getPostFamily(slug)
+    if (family.length === 0) throw new Error(`Post not found: ${slug}`)
+
+    const deletedRepos: DeleteFamilyResult['deletedRepos'] = []
+    for (const post of family) {
+      try {
+        const deleted = await env.ARTIFACTS.delete(post.repo_name)
+        deletedRepos.push({ name: post.repo_name, deleted })
+      } catch (err) {
+        throw new Error(
+          `Stopped before deleting D1 rows: failed to delete ${post.repo_name}: ${err instanceof Error ? err.message : String(err)}`,
+        )
+      }
+    }
+
+    const deletedRows = await deletePostFamilyRows(slug)
+    if (deletedRows !== family.length) {
+      throw new Error(
+        `Deleted ${deletedRepos.length} Artifacts repos, but D1 removed ${deletedRows}/${family.length} rows. Refresh before retrying.`,
+      )
+    }
+
+    return { rootSlug: slug, deletedPosts: family, deletedRepos }
+  })
+
+export const deleteOrphanArtifactRepo = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (data: { repoName: string; confirm: string; adminKey?: string }) => data,
+  )
+  .handler(async ({ data }): Promise<DeleteRepoResult> => {
+    assertAdmin(data.adminKey)
+
+    const repoName = data.repoName.trim()
+    if (!repoName) throw new Error('Repo name is required')
+    if (data.confirm !== `DELETE ${repoName}`) {
+      throw new Error(`Type DELETE ${repoName} to confirm`)
+    }
+
+    const linked = await env.DB.prepare('SELECT slug FROM posts WHERE repo_name = ?')
+      .bind(repoName)
+      .first<{ slug: string }>()
+    if (linked) {
+      throw new Error(
+        `Repo ${repoName} is indexed as /posts/${linked.slug}; delete the post lineage instead so D1 stays consistent.`,
+      )
+    }
+
+    const deleted = await env.ARTIFACTS.delete(repoName)
+    return { repoName, deleted }
+  })
+
+export const deleteOrphanArtifactRepos = createServerFn({ method: 'POST' })
+  .inputValidator((data: { confirm: string; adminKey?: string }) => data)
+  .handler(async ({ data }): Promise<DeleteOrphansResult> => {
+    assertAdmin(data.adminKey)
+    if (data.confirm !== 'DELETE ORPHANS') {
+      throw new Error('Type DELETE ORPHANS to confirm')
+    }
+
+    const indexedResult = await env.DB.prepare(
+      'SELECT repo_name FROM posts LIMIT 10000',
+    ).all<{ repo_name: string }>()
+    const indexed = new Set(
+      ((indexedResult.results ?? []) as { repo_name: string }[]).map(
+        (row) => row.repo_name,
+      ),
+    )
+
+    const orphanNames: string[] = []
+    let cursor: string | undefined
+    do {
+      const page = await env.ARTIFACTS.list({ limit: 200, cursor })
+      orphanNames.push(
+        ...page.repos
+          .map((repo) => repo.name)
+          .filter((name) => !indexed.has(name)),
+      )
+      cursor = page.cursor
+    } while (cursor)
+
+    const deletedRepos: DeleteOrphansResult['deletedRepos'] = []
+    for (const name of orphanNames) {
+      const deleted = await env.ARTIFACTS.delete(name)
+      deletedRepos.push({ name, deleted })
+    }
+
+    return { deletedRepos }
   })

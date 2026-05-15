@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as NewRouteImport } from './routes/new'
+import { Route as JillesRouteImport } from './routes/jilles'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PostsSlugIndexRouteImport } from './routes/posts.$slug.index'
@@ -19,6 +20,11 @@ import { Route as PostsSlugEditRouteImport } from './routes/posts.$slug.edit'
 const NewRoute = NewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JillesRoute = JillesRouteImport.update({
+  id: '/jilles',
+  path: '/jilles',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -50,6 +56,7 @@ const PostsSlugEditRoute = PostsSlugEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/jilles': typeof JillesRoute
   '/new': typeof NewRoute
   '/posts/$slug/edit': typeof PostsSlugEditRoute
   '/posts/$slug/history': typeof PostsSlugHistoryRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/jilles': typeof JillesRoute
   '/new': typeof NewRoute
   '/posts/$slug/edit': typeof PostsSlugEditRoute
   '/posts/$slug/history': typeof PostsSlugHistoryRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/jilles': typeof JillesRoute
   '/new': typeof NewRoute
   '/posts/$slug/edit': typeof PostsSlugEditRoute
   '/posts/$slug/history': typeof PostsSlugHistoryRoute
@@ -77,6 +86,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/jilles'
     | '/new'
     | '/posts/$slug/edit'
     | '/posts/$slug/history'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/jilles'
     | '/new'
     | '/posts/$slug/edit'
     | '/posts/$slug/history'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/jilles'
     | '/new'
     | '/posts/$slug/edit'
     | '/posts/$slug/history'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  JillesRoute: typeof JillesRoute
   NewRoute: typeof NewRoute
   PostsSlugEditRoute: typeof PostsSlugEditRoute
   PostsSlugHistoryRoute: typeof PostsSlugHistoryRoute
@@ -115,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/new'
       fullPath: '/new'
       preLoaderRoute: typeof NewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jilles': {
+      id: '/jilles'
+      path: '/jilles'
+      fullPath: '/jilles'
+      preLoaderRoute: typeof JillesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -158,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  JillesRoute: JillesRoute,
   NewRoute: NewRoute,
   PostsSlugEditRoute: PostsSlugEditRoute,
   PostsSlugHistoryRoute: PostsSlugHistoryRoute,
