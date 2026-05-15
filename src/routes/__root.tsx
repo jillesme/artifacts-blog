@@ -19,18 +19,48 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'Artifacts Blog — a Git-backed blog on Cloudflare',
+        title: 'The Cloudflare Artifacts — a Git-backed broadsheet',
       },
       {
         name: 'description',
         content:
           'A tiny demo blog where every post is a real Cloudflare Artifacts Git repo — with history, forks, and git clone included.',
       },
+      {
+        name: 'theme-color',
+        content: '#f6821f',
+      },
     ],
     links: [
       {
         rel: 'stylesheet',
         href: appCss,
+      },
+      {
+        rel: 'icon',
+        href: '/favicon.ico',
+        sizes: 'any',
+      },
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '32x32',
+        href: '/favicon-32.png',
+      },
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '16x16',
+        href: '/favicon-16.png',
+      },
+      {
+        rel: 'apple-touch-icon',
+        sizes: '180x180',
+        href: '/apple-touch-icon.png',
+      },
+      {
+        rel: 'manifest',
+        href: '/manifest.json',
       },
     ],
   }),

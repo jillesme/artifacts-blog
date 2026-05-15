@@ -20,82 +20,89 @@ function Home() {
   const posts = Route.useLoaderData()
 
   return (
-    <main className="measure-wide px-4 pb-16 pt-12 sm:pt-16">
-      {/* ── Cover / masthead ─────────────────────────────────────────── */}
-      <section
-        className="ink-in relative grid gap-10 pb-14 sm:grid-cols-[1.3fr_1fr] sm:gap-14"
-        aria-labelledby="cover-title"
-      >
-        <div>
-          <p className="folio mb-5">
-            Vol. I · Issue 01 · Published continuously
-          </p>
-          <h1
-            id="cover-title"
-            className="display text-[clamp(3rem,9vw,6.5rem)] font-semibold text-[var(--ink)]"
-          >
-            Every post
-            <br />
-            <em
-              className="font-normal italic"
-              style={{ fontVariationSettings: '"opsz" 144, "SOFT" 100, "WONK" 1' }}
-            >
-              is a git repo.
-            </em>
-          </h1>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link to="/new" className="btn-primary">
-              Compose a post →
-            </Link>
-            <Link to="/about" className="btn-ghost">
-              Read the colophon
-            </Link>
-          </div>
+    <main className="measure-wide px-4 pb-16 pt-8 sm:pt-12">
+      {/* ── Cover / lede — clean white editorial, orange used as a typographic
+            accent in the kicker tab and the headline italic. ─────────── */}
+      <section className="ink-in" aria-labelledby="cover-title">
+        <div className="hero-rails">
+          <span className="hero-tab">The Leader</span>
         </div>
 
-        <aside
-          className="self-end border-l border-[var(--rule)] pl-6 text-[15px] leading-relaxed text-[var(--ink-soft)] sm:pl-8"
-          aria-label="From the editor"
-        >
-          <p className="smallcaps mb-3">From the editor</p>
-          <p className="m-0">
-            A small experiment. Each entry published here is stored in its own
-            Cloudflare Artifacts repository — a real, cloneable Git remote.
-            Edits become commits. <em>Forking</em> a post spins up a new repo
-            that diverges on its own. Readers can <code>git clone</code> any
-            page to their laptop. Plain text, kept honestly.
-          </p>
-          <p className="byline mt-4 text-sm">— The composition room</p>
-        </aside>
+        <div className="grid gap-10 pt-10 sm:grid-cols-[1.35fr_1fr] sm:gap-14 sm:pt-14">
+          <div>
+            <p className="kicker mb-4">Front page · Issue 01</p>
+            <h1
+              id="cover-title"
+              className="display text-[clamp(2.6rem,7.5vw,5.5rem)] font-semibold text-[var(--ink)]"
+            >
+              Every post
+              <br />
+              <em
+                className="font-normal italic text-[var(--cf-orange)]"
+                style={{
+                  fontVariationSettings:
+                    '"opsz" 144, "SOFT" 100, "WONK" 1',
+                }}
+              >
+                is a git repo.
+              </em>
+            </h1>
+
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link to="/new" className="btn-primary">
+                Compose a post →
+              </Link>
+              <Link to="/about" className="btn-ghost">
+                Read the colophon
+              </Link>
+            </div>
+          </div>
+
+          <aside
+            className="border-l-2 border-[var(--cf-orange)] pl-6 text-[15px] leading-relaxed text-[var(--ink-soft)] sm:pl-8"
+            aria-label="From the editor"
+          >
+            <p className="kicker mb-3">From the editor</p>
+            <p className="m-0">
+              A small experiment. Each entry published here is stored in
+              its own Cloudflare Artifacts repository — a real,
+              cloneable Git remote. Edits become commits.{' '}
+              <em>Forking</em> a post spins up a new repo that diverges
+              on its own. Readers can <code>git clone</code> any page to
+              their laptop. Plain text, kept honestly.
+            </p>
+            <p className="byline mt-4 text-sm">— The composition room</p>
+          </aside>
+        </div>
       </section>
 
-      <div className="double-rule" />
+      <div className="triple-rule mt-14" />
 
       {/* ── Feature columns ──────────────────────────────────────────── */}
-      <section className="grid gap-10 py-12 sm:grid-cols-3 sm:gap-12">
+      <section className="grid gap-10 py-14 sm:grid-cols-3 sm:gap-12">
         {[
           {
-            folio: '§ I',
+            kicker: '§ I',
             title: 'Commits, not saves',
             body: 'Every edit pushes a new commit to main. Nothing is lost; every past version renders on its own URL.',
           },
           {
-            folio: '§ II',
+            kicker: '§ II',
             title: 'Forks, not copies',
             body: 'A fork creates an entirely new Artifacts repo with independent history. Readers become authors.',
           },
           {
-            folio: '§ III',
+            kicker: '§ III',
             title: 'Plain-text, portable',
             body: 'The Worker mints you a short-lived read token and hands you a git clone command. The post is yours.',
           },
         ].map((col, idx) => (
           <article
             key={col.title}
-            className="rise flex flex-col gap-3"
+            className="rise flex flex-col gap-3 border-t-[3px] border-[var(--cf-orange)] pt-4"
             style={{ animationDelay: `${idx * 90 + 120}ms` }}
           >
-            <p className="folio">{col.folio}</p>
+            <p className="kicker">{col.kicker}</p>
             <h2 className="display text-2xl font-semibold text-[var(--ink)]">
               {col.title}
             </h2>
@@ -114,12 +121,21 @@ function Home() {
       <section aria-labelledby="contents-heading" className="pb-8">
         <header className="mb-8 flex items-end justify-between gap-4 border-b border-[var(--rule)] pb-4">
           <div>
-            <p className="folio mb-1">The contents</p>
+            <p className="kicker mb-1">The contents</p>
             <h2
               id="contents-heading"
-              className="display text-3xl font-semibold text-[var(--ink)] sm:text-4xl"
+              className="display text-3xl font-semibold sm:text-4xl"
             >
-              Latest entries
+              <span className="text-[var(--ink)]">Latest </span>
+              <em
+                className="font-normal italic text-[var(--cf-orange)]"
+                style={{
+                  fontVariationSettings:
+                    '"opsz" 144, "SOFT" 100, "WONK" 1',
+                }}
+              >
+                entries
+              </em>
             </h2>
           </div>
           <p className="folio">
@@ -165,7 +181,7 @@ function Home() {
                     to="/posts/$slug"
                     params={{ slug: post.slug }}
                     search={{ v: undefined }}
-                    className="text-[var(--ink)] no-underline transition hover:text-[var(--oxblood)]"
+                    className="text-[var(--ink)] no-underline transition hover:text-[var(--cf-orange-deep,#e2570d)]"
                   >
                     {post.title}
                   </Link>
@@ -182,21 +198,24 @@ function Home() {
                     to="/posts/$slug"
                     params={{ slug: post.slug }}
                     search={{ v: undefined }}
-                    className="font-medium text-[var(--oxblood)]"
+                    className="font-semibold uppercase tracking-wider text-[var(--cf-orange-deep,#e2570d)] no-underline"
+                    style={{ fontFamily: 'var(--font-grotesk)', fontSize: '0.78rem', letterSpacing: '0.14em' }}
                   >
                     Read →
                   </Link>
                   <Link
                     to="/posts/$slug/history"
                     params={{ slug: post.slug }}
-                    className="text-[var(--ink-soft)]"
+                    className="text-[var(--ink-soft)] no-underline hover:text-[var(--ink)]"
+                    style={{ fontFamily: 'var(--font-grotesk)', fontSize: '0.78rem', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600 }}
                   >
                     History
                   </Link>
                   <Link
                     to="/posts/$slug/edit"
                     params={{ slug: post.slug }}
-                    className="text-[var(--ink-soft)]"
+                    className="text-[var(--ink-soft)] no-underline hover:text-[var(--ink)]"
+                    style={{ fontFamily: 'var(--font-grotesk)', fontSize: '0.78rem', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600 }}
                   >
                     Edit
                   </Link>
