@@ -1,6 +1,6 @@
 {
   "short_name": "Artifacts",
-  "name": "The Cloudflare Artifacts — a Git-backed blog",
+  "name": "The Cloudflare Artifacts — a Git-backed wiki",
   "icons": [
     {
       "src": "favicon.ico",

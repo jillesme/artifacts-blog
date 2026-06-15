@@ -10,12 +10,12 @@ export default function Footer() {
           {/* Brand block */}
           <div>
             <p className="nameplate text-2xl text-[var(--ink)]">
-              The <em>Cloudflare</em> Artifacts
+              The <em>Cloudflare</em> Artifacts Wiki
             </p>
             <p className="mt-3 max-w-md text-[15px] leading-relaxed">
               Set in <em>Fraunces</em>, <em>Newsreader</em>, and{' '}
-              <em>Inter</em>. Composed on Cloudflare Workers. Each post is
-              a real Git repository — commit, fork, clone. Paper is
+              <em>Inter</em>. Composed on Cloudflare Workers. Each page is
+              a real Git repository — edit, revise, fork, clone. Paper is
               optional.
             </p>
           </div>
@@ -26,12 +26,12 @@ export default function Footer() {
             <ul className="m-0 list-none space-y-2 p-0 text-[15px]">
               <li>
                 <a href="/" className="no-underline hover:underline">
-                  Front Page
+                  Index
                 </a>
               </li>
               <li>
                 <a href="/new" className="no-underline hover:underline">
-                  Compose
+                  New Page
                 </a>
               </li>
               <li>
@@ -39,7 +39,7 @@ export default function Footer() {
                   href="/about"
                   className="no-underline hover:underline"
                 >
-                  Colophon
+                  About
                 </a>
               </li>
             </ul>
@@ -71,7 +71,7 @@ export default function Footer() {
           <p className="folio m-0">
             © {year} — All commits the property of their authors.
           </p>
-          <p className="folio m-0">"All the news that's fit to push."</p>
+            <p className="folio m-0">"All the knowledge that's fit to push."</p>
         </div>
       </div>
     </footer>

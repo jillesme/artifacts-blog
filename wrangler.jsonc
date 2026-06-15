@@ -4,10 +4,10 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "artifacts-blog",
+	"name": "artifacts-wiki",
 	"account_id": "e47294a4cfb02c21f673410b87b93428",
 	// Bumped to a date that supports Artifacts
-	"compatibility_date": "2026-04-21",
+	"compatibility_date": "2026-05-26",
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
@@ -18,26 +18,26 @@
 	"upload_source_maps": true,
 
 	/**
-	 * D1 stores post metadata and a pointer to the Artifacts repo + current commit SHA.
-	 * The actual post content (markdown + assets) lives as a real Git repo in Artifacts.
+	 * D1 stores wiki page metadata and a pointer to the Artifacts repo + current commit SHA.
+	 * The actual page content (markdown + assets) lives as a real Git repo in Artifacts.
 	 */
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "artifacts-blog-db",
+			"database_name": "artifacts-wiki-db",
 			"database_id": "52fba204-19bb-4fed-b9eb-1a0a7d529520",
 			"migrations_dir": "migrations"
 		}
 	],
 
 	/**
-	 * Artifacts: each blog post is its own versioned Git repo.
+	 * Artifacts: each wiki page is its own versioned Git repo.
 	 * https://developers.cloudflare.com/artifacts/
 	 */
 	"artifacts": [
 		{
 			"binding": "ARTIFACTS",
-			"namespace": "blog"
+			"namespace": "wiki"
 		}
 	]
 }

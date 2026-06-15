@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { mintCloneToken } from '../server/posts'
+import { mintCloneToken } from '../server/pages'
 import { Copy, Check } from 'lucide-react'
 
 interface Props {
@@ -7,8 +7,8 @@ interface Props {
 }
 
 /**
- * The "git clone your post" block. On click we ask the Worker to mint a
- * short-lived read-scoped Artifacts token for this repo, then render the
+ * The "git clone your page" block. On click we ask the Worker to mint a
+ * short-lived read/write Artifacts token for this repo, then render the
  * ready-to-paste command in a terminal-style block.
  */
 export default function CloneSnippet({ slug }: Props) {
@@ -50,13 +50,13 @@ export default function CloneSnippet({ slug }: Props) {
 
   if (!info) {
     return (
-      <section className="border-y border-[var(--rule)] py-6" aria-label="Clone this entry">
+      <section className="border-y border-[var(--rule)] py-6" aria-label="Clone this page">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="max-w-md">
             <p className="smallcaps mb-1">Take it with you</p>
             <p className="m-0 text-[15px] leading-relaxed text-[var(--ink-soft)]">
               Mint a 15-minute read/write token and get a ready-to-paste{' '}
-              <code>git clone</code> command. This entry is a real remote;
+              <code>git clone</code> command. This page is a real remote;
               clone it, edit offline, and <code>git push</code> to update it.
             </p>
           </div>
@@ -75,9 +75,9 @@ export default function CloneSnippet({ slug }: Props) {
   )
 
   return (
-    <section className="border-y border-[var(--rule)] py-6" aria-label="Clone this entry">
+    <section className="border-y border-[var(--rule)] py-6" aria-label="Clone this page">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <p className="smallcaps m-0">Clone this entry</p>
+        <p className="smallcaps m-0">Clone this page</p>
         <span className="tag tag-accent">
           Token expires in ~{expiresIn} min
         </span>
@@ -105,14 +105,14 @@ export default function CloneSnippet({ slug }: Props) {
         </strong>
         This token is <strong>read/write</strong> and scoped to this repo.
         Anyone holding it can <code>git push</code> to <code>main</code> for
-        the next ~{expiresIn} minutes. The blog has no auth — that's
+        the next ~{expiresIn} minutes. The wiki has no auth — that's
         intentional for the demo. If this were production, you'd gate token
         minting behind a real identity.
       </aside>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <p className="m-0 text-[13px] leading-relaxed text-[var(--ink-soft)]">
-          When it expires, mint another — or fork the entry to get your own
+          When it expires, mint another — or fork the page to get your own
           independent repo.
         </p>
         <button

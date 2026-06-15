@@ -12,7 +12,7 @@
  *   Docs: https://developers.cloudflare.com/workers/runtime-apis/nodejs/fs/
  *
  * Why not store content in KV or R2?
- *   Because then "history", "diff", "fork", and "git clone from your blog"
+ *   Because then "history", "diff", "fork", and "git clone from your wiki"
  *   all become features we have to reinvent. Artifacts + Git gives them to
  *   us for free.
  */
@@ -22,11 +22,11 @@ import git from 'isomorphic-git'
 import http from 'isomorphic-git/http/web'
 
 export const AUTHOR = {
-  name: 'Artifacts Blog',
-  email: 'blog@artifacts.example',
+  name: 'Artifacts Wiki',
+  email: 'wiki@artifacts.example',
 }
 
-export const POST_FILE = 'post.md'
+export const PAGE_FILE = 'page.md'
 export const META_FILE = 'meta.json'
 
 /**
@@ -49,7 +49,7 @@ function authFor(token: string) {
 }
 
 /** Metadata we store in `meta.json` alongside the markdown body. */
-export interface PostMeta {
+export interface PageMeta {
   title: string
   author: string
   summary?: string
@@ -57,15 +57,15 @@ export interface PostMeta {
   forkedFrom?: string
 }
 
-export interface CreatePostResult {
+export interface CreatePageResult {
   repoName: string
   remote: string
   sha: string
 }
 
-export interface RenderedPost {
+export interface RenderedPage {
   markdown: string
-  meta: PostMeta
+  meta: PageMeta
   sha: string
   ref: string | null
 }
@@ -89,16 +89,32 @@ async function mintWriteToken(env: Env, repoName: string): Promise<string> {
   return token.plaintext
 }
 
+function authorFor(name?: string) {
+  const trimmed = name?.trim()
+  return trimmed
+    ? { name: trimmed.slice(0, 80), email: `${slugEmail(trimmed)}@artifacts.example` }
+    : AUTHOR
+}
+
+function slugEmail(input: string): string {
+  return (
+    input
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'contributor'
+  )
+}
+
 /**
- * Create a new Artifacts repo, commit `post.md` + `meta.json`, and push `main`.
+ * Create a new Artifacts repo, commit `page.md` + `meta.json`, and push `main`.
  * Returns the repo name, remote URL, and the first commit's SHA.
  */
-export async function createPostRepo(
+export async function createPageRepo(
   env: Env,
   repoName: string,
   body: string,
-  meta: PostMeta,
-): Promise<CreatePostResult> {
+  meta: PageMeta,
+): Promise<CreatePageResult> {
   const created = await env.ARTIFACTS.create(repoName, {
     description: meta.title,
   })
@@ -108,25 +124,25 @@ export async function createPostRepo(
   await fs.promises.mkdir(dir, { recursive: true })
   await git.init({ fs, dir, defaultBranch: 'main' })
 
-  await fs.promises.writeFile(`${dir}/${POST_FILE}`, body)
+  await fs.promises.writeFile(`${dir}/${PAGE_FILE}`, body)
   await fs.promises.writeFile(
     `${dir}/${META_FILE}`,
     JSON.stringify(meta, null, 2) + '\n',
   )
   await fs.promises.writeFile(
     `${dir}/README.md`,
-    `# ${meta.title}\n\nThis post lives in a Cloudflare Artifacts repo.\n\nClone it, edit \`post.md\`, and push to suggest changes.\n`,
+    `# ${meta.title}\n\nThis wiki page lives in a Cloudflare Artifacts repo.\n\nClone it, edit \`page.md\`, and push to suggest changes.\n`,
   )
 
-  await git.add({ fs, dir, filepath: POST_FILE })
+  await git.add({ fs, dir, filepath: PAGE_FILE })
   await git.add({ fs, dir, filepath: META_FILE })
   await git.add({ fs, dir, filepath: 'README.md' })
 
   const sha = await git.commit({
     fs,
     dir,
-    message: `Publish: ${meta.title}`,
-    author: AUTHOR,
+    message: `Create page: ${meta.title}`,
+    author: authorFor(meta.author),
   })
 
   await git.push({
@@ -142,15 +158,15 @@ export async function createPostRepo(
 }
 
 /**
- * Read `post.md` + `meta.json` from the repo at a given commit (or tip of main).
- * We do a shallow clone, which is fast enough for blog-sized repos.
+ * Read `page.md` + `meta.json` from the repo at a given commit (or tip of main).
+ * We do a shallow clone, which is fast enough for wiki-sized repos.
  */
-export async function readPost(
+export async function readPage(
   env: Env,
   repoName: string,
   remote: string,
   atSha?: string,
-): Promise<RenderedPost> {
+): Promise<RenderedPage> {
   const token = await mintReadToken(env, repoName)
   const dir = newWorkdir()
   await fs.promises.mkdir(dir, { recursive: true })
@@ -170,11 +186,11 @@ export async function readPost(
     oid = await git.resolveRef({ fs, dir, ref: 'main' })
   }
 
-  const postBytes = await git.readBlob({
+  const pageBytes = await git.readBlob({
     fs,
     dir,
     oid,
-    filepath: POST_FILE,
+    filepath: PAGE_FILE,
   })
   let metaText = '{}'
   try {
@@ -189,9 +205,9 @@ export async function readPost(
     // meta.json may not exist on older commits — fall back silently.
   }
 
-  const meta = JSON.parse(metaText) as PostMeta
+  const meta = JSON.parse(metaText) as PageMeta
   return {
-    markdown: new TextDecoder().decode(postBytes.blob),
+    markdown: new TextDecoder().decode(pageBytes.blob),
     meta,
     sha: oid,
     ref: atSha ? null : 'main',
@@ -199,15 +215,16 @@ export async function readPost(
 }
 
 /**
- * Commit a new version of `post.md`, push, and return the new HEAD SHA.
+ * Commit a new version of `page.md`, push, and return the new HEAD SHA.
  */
-export async function updatePost(
+export async function updatePage(
   env: Env,
   repoName: string,
   remote: string,
   body: string,
-  meta: PostMeta,
+  meta: PageMeta,
   message: string,
+  editor?: string,
 ): Promise<string> {
   const token = await mintWriteToken(env, repoName)
   const dir = newWorkdir()
@@ -223,20 +240,20 @@ export async function updatePost(
     onAuth: authFor(token),
   })
 
-  await fs.promises.writeFile(`${dir}/${POST_FILE}`, body)
+  await fs.promises.writeFile(`${dir}/${PAGE_FILE}`, body)
   await fs.promises.writeFile(
     `${dir}/${META_FILE}`,
     JSON.stringify(meta, null, 2) + '\n',
   )
 
-  await git.add({ fs, dir, filepath: POST_FILE })
+  await git.add({ fs, dir, filepath: PAGE_FILE })
   await git.add({ fs, dir, filepath: META_FILE })
 
   const sha = await git.commit({
     fs,
     dir,
     message,
-    author: AUTHOR,
+    author: authorFor(editor),
   })
 
   await git.push({
@@ -286,7 +303,7 @@ export async function readHistory(
  * Fork an existing Artifacts repo into a new one. The new repo has its own
  * remote, its own tokens, and diverges independently.
  */
-export async function forkPostRepo(
+export async function forkPageRepo(
   env: Env,
   sourceRepoName: string,
   targetRepoName: string,

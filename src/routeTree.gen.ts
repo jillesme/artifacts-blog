@@ -13,9 +13,9 @@ import { Route as NewRouteImport } from './routes/new'
 import { Route as JillesRouteImport } from './routes/jilles'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as PostsSlugIndexRouteImport } from './routes/posts.$slug.index'
-import { Route as PostsSlugHistoryRouteImport } from './routes/posts.$slug.history'
-import { Route as PostsSlugEditRouteImport } from './routes/posts.$slug.edit'
+import { Route as WikiSlugIndexRouteImport } from './routes/wiki.$slug.index'
+import { Route as WikiSlugHistoryRouteImport } from './routes/wiki.$slug.history'
+import { Route as WikiSlugEditRouteImport } from './routes/wiki.$slug.edit'
 
 const NewRoute = NewRouteImport.update({
   id: '/new',
@@ -37,19 +37,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PostsSlugIndexRoute = PostsSlugIndexRouteImport.update({
-  id: '/posts/$slug/',
-  path: '/posts/$slug/',
+const WikiSlugIndexRoute = WikiSlugIndexRouteImport.update({
+  id: '/wiki/$slug/',
+  path: '/wiki/$slug/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PostsSlugHistoryRoute = PostsSlugHistoryRouteImport.update({
-  id: '/posts/$slug/history',
-  path: '/posts/$slug/history',
+const WikiSlugHistoryRoute = WikiSlugHistoryRouteImport.update({
+  id: '/wiki/$slug/history',
+  path: '/wiki/$slug/history',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PostsSlugEditRoute = PostsSlugEditRouteImport.update({
-  id: '/posts/$slug/edit',
-  path: '/posts/$slug/edit',
+const WikiSlugEditRoute = WikiSlugEditRouteImport.update({
+  id: '/wiki/$slug/edit',
+  path: '/wiki/$slug/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -58,18 +58,18 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/jilles': typeof JillesRoute
   '/new': typeof NewRoute
-  '/posts/$slug/edit': typeof PostsSlugEditRoute
-  '/posts/$slug/history': typeof PostsSlugHistoryRoute
-  '/posts/$slug/': typeof PostsSlugIndexRoute
+  '/wiki/$slug/edit': typeof WikiSlugEditRoute
+  '/wiki/$slug/history': typeof WikiSlugHistoryRoute
+  '/wiki/$slug/': typeof WikiSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/jilles': typeof JillesRoute
   '/new': typeof NewRoute
-  '/posts/$slug/edit': typeof PostsSlugEditRoute
-  '/posts/$slug/history': typeof PostsSlugHistoryRoute
-  '/posts/$slug': typeof PostsSlugIndexRoute
+  '/wiki/$slug/edit': typeof WikiSlugEditRoute
+  '/wiki/$slug/history': typeof WikiSlugHistoryRoute
+  '/wiki/$slug': typeof WikiSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,9 +77,9 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/jilles': typeof JillesRoute
   '/new': typeof NewRoute
-  '/posts/$slug/edit': typeof PostsSlugEditRoute
-  '/posts/$slug/history': typeof PostsSlugHistoryRoute
-  '/posts/$slug/': typeof PostsSlugIndexRoute
+  '/wiki/$slug/edit': typeof WikiSlugEditRoute
+  '/wiki/$slug/history': typeof WikiSlugHistoryRoute
+  '/wiki/$slug/': typeof WikiSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -88,27 +88,27 @@ export interface FileRouteTypes {
     | '/about'
     | '/jilles'
     | '/new'
-    | '/posts/$slug/edit'
-    | '/posts/$slug/history'
-    | '/posts/$slug/'
+    | '/wiki/$slug/edit'
+    | '/wiki/$slug/history'
+    | '/wiki/$slug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/jilles'
     | '/new'
-    | '/posts/$slug/edit'
-    | '/posts/$slug/history'
-    | '/posts/$slug'
+    | '/wiki/$slug/edit'
+    | '/wiki/$slug/history'
+    | '/wiki/$slug'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/jilles'
     | '/new'
-    | '/posts/$slug/edit'
-    | '/posts/$slug/history'
-    | '/posts/$slug/'
+    | '/wiki/$slug/edit'
+    | '/wiki/$slug/history'
+    | '/wiki/$slug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -116,9 +116,9 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   JillesRoute: typeof JillesRoute
   NewRoute: typeof NewRoute
-  PostsSlugEditRoute: typeof PostsSlugEditRoute
-  PostsSlugHistoryRoute: typeof PostsSlugHistoryRoute
-  PostsSlugIndexRoute: typeof PostsSlugIndexRoute
+  WikiSlugEditRoute: typeof WikiSlugEditRoute
+  WikiSlugHistoryRoute: typeof WikiSlugHistoryRoute
+  WikiSlugIndexRoute: typeof WikiSlugIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -151,25 +151,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/posts/$slug/': {
-      id: '/posts/$slug/'
-      path: '/posts/$slug'
-      fullPath: '/posts/$slug/'
-      preLoaderRoute: typeof PostsSlugIndexRouteImport
+    '/wiki/$slug/': {
+      id: '/wiki/$slug/'
+      path: '/wiki/$slug'
+      fullPath: '/wiki/$slug/'
+      preLoaderRoute: typeof WikiSlugIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/posts/$slug/history': {
-      id: '/posts/$slug/history'
-      path: '/posts/$slug/history'
-      fullPath: '/posts/$slug/history'
-      preLoaderRoute: typeof PostsSlugHistoryRouteImport
+    '/wiki/$slug/history': {
+      id: '/wiki/$slug/history'
+      path: '/wiki/$slug/history'
+      fullPath: '/wiki/$slug/history'
+      preLoaderRoute: typeof WikiSlugHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/posts/$slug/edit': {
-      id: '/posts/$slug/edit'
-      path: '/posts/$slug/edit'
-      fullPath: '/posts/$slug/edit'
-      preLoaderRoute: typeof PostsSlugEditRouteImport
+    '/wiki/$slug/edit': {
+      id: '/wiki/$slug/edit'
+      path: '/wiki/$slug/edit'
+      fullPath: '/wiki/$slug/edit'
+      preLoaderRoute: typeof WikiSlugEditRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -180,9 +180,9 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   JillesRoute: JillesRoute,
   NewRoute: NewRoute,
-  PostsSlugEditRoute: PostsSlugEditRoute,
-  PostsSlugHistoryRoute: PostsSlugHistoryRoute,
-  PostsSlugIndexRoute: PostsSlugIndexRoute,
+  WikiSlugEditRoute: WikiSlugEditRoute,
+  WikiSlugHistoryRoute: WikiSlugHistoryRoute,
+  WikiSlugIndexRoute: WikiSlugIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

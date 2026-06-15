@@ -1,23 +1,23 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { createPost } from '../server/posts'
+import { createPage } from '../server/pages'
 
 export const Route = createFileRoute('/new')({
-  component: NewPost,
+  component: NewPage,
 })
 
-const STARTER_BODY = `# Hello, Artifacts
+const STARTER_BODY = `# Hello, Artifacts Wiki
 
-This post is a Git repository. Every edit is a commit.
+This page is a Git repository. Every edit is a commit.
 
 Try:
 
 1. Edit this file and hit **Save** — you'll see a new SHA.
-2. Open **History** to view past versions.
-3. Hit **Fork** to spin up an independent copy.
+2. Open **Revision history** to view past versions.
+3. Hit **Fork page** to spin up an independent copy.
 `
 
-function NewPost() {
+function NewPage() {
   const navigate = useNavigate()
   const [title, setTitle] = useState('')
   const [author, setAuthor] = useState('')
@@ -31,7 +31,7 @@ function NewPost() {
     setBusy(true)
     setError(null)
     try {
-      const result = await createPost({
+      const result = await createPage({
         data: {
           title,
           author: author || undefined,
@@ -40,7 +40,7 @@ function NewPost() {
         },
       })
       navigate({
-        to: '/posts/$slug',
+        to: '/wiki/$slug',
         params: { slug: result.slug },
         search: { v: undefined },
       })
@@ -53,13 +53,13 @@ function NewPost() {
   return (
     <main className="measure px-4 pb-16 pt-10 sm:pt-14">
       <header className="ink-in mb-10">
-        <p className="folio mb-4">The compositor · new entry</p>
+        <p className="folio mb-4">The wiki desk · new page</p>
         <h1 className="display text-[clamp(2.5rem,6vw,4rem)] font-semibold text-[var(--ink)]">
-          Set a new entry in type.
+          Create a new wiki page.
         </h1>
         <p className="byline mt-5 text-lg leading-relaxed text-[var(--ink-soft)]">
           Filling this form creates a fresh Artifacts repository, writes{' '}
-          <code>post.md</code> & <code>meta.json</code>, and pushes the first
+          <code>page.md</code> & <code>meta.json</code>, and pushes the first
           commit to <code>main</code>.
         </p>
         <div className="mt-6 h-px bg-[var(--rule)]" />
@@ -73,13 +73,13 @@ function NewPost() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="field-input"
-            placeholder="On forking a blog post"
+            placeholder="How to use Artifacts"
           />
         </label>
 
         <div className="grid gap-6 sm:grid-cols-2">
           <label className="field">
-            <span className="field-label">Author</span>
+            <span className="field-label">Creator</span>
             <input
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
@@ -113,10 +113,10 @@ function NewPost() {
 
         <div className="flex flex-wrap items-center gap-5 border-t border-[var(--rule)] pt-6">
           <button type="submit" disabled={busy} className="btn-primary">
-            {busy ? 'Pushing first commit…' : 'Set & publish'}
+            {busy ? 'Pushing first commit…' : 'Create page'}
           </button>
           <p className="m-0 text-sm leading-relaxed text-[var(--ink-soft)]">
-            A new repo, <code>post-&lt;slug&gt;-&lt;nonce&gt;</code>, will be
+            A new repo, <code>page-&lt;slug&gt;-&lt;nonce&gt;</code>, will be
             provisioned on Cloudflare Artifacts.
           </p>
         </div>

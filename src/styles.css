@@ -143,7 +143,7 @@ body {
 }
 
 /* No grain on white newsprint — keep it clean. A faint horizontal hairline
-   pattern at the very top (like a folded broadsheet) instead. */
+   pattern at the very top (like a folded index sheet) instead. */
 body::before {
   content: "";
   position: fixed;
@@ -337,7 +337,7 @@ hr {
   color: var(--ink-soft);
 }
 
-/* Editorial drop-cap on the first paragraph of a rendered post */
+/* Editorial drop-cap on the first paragraph of a rendered page */
 .editorial-body > p:first-of-type::first-letter {
   font-family: var(--font-display);
   font-weight: 800;
@@ -350,7 +350,7 @@ hr {
   color: var(--cf-orange);
 }
 
-/* Number the editorial post list like a table of contents */
+/* Number the wiki page list like a table of contents */
 .toc {
   counter-reset: toc;
 }

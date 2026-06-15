@@ -5,23 +5,24 @@ import {
   useNavigate,
 } from '@tanstack/react-router'
 import { useState } from 'react'
-import { editPost, getPost } from '../server/posts'
+import { editPage, getPage } from '../server/pages'
 
-export const Route = createFileRoute('/posts/$slug/edit')({
-  component: EditPost,
+export const Route = createFileRoute('/wiki/$slug/edit')({
+  component: EditPage,
   loader: async ({ params }) => {
-    const view = await getPost({ data: { slug: params.slug } })
+    const view = await getPage({ data: { slug: params.slug } })
     if (!view) throw notFound()
     return view
   },
 })
 
-function EditPost() {
+function EditPage() {
   const view = Route.useLoaderData()
   const navigate = useNavigate()
-  const [title, setTitle] = useState(view.post.title)
-  const [summary, setSummary] = useState(view.post.summary ?? '')
+  const [title, setTitle] = useState(view.page.title)
+  const [summary, setSummary] = useState(view.page.summary ?? '')
   const [body, setBody] = useState(view.markdown)
+  const [editor, setEditor] = useState('')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -31,17 +32,18 @@ function EditPost() {
     setBusy(true)
     setError(null)
     try {
-      const res = await editPost({
+      const res = await editPage({
         data: {
-          slug: view.post.slug,
+          slug: view.page.slug,
           title,
           summary: summary || undefined,
           body,
           message: message || undefined,
+          editor: editor || undefined,
         },
       })
       navigate({
-        to: '/posts/$slug',
+        to: '/wiki/$slug',
         params: { slug: res.slug },
         search: { v: undefined },
       })
@@ -55,12 +57,12 @@ function EditPost() {
     <main className="measure px-4 pb-16 pt-10 sm:pt-14">
       <div className="mb-6">
         <Link
-          to="/posts/$slug"
-          params={{ slug: view.post.slug }}
+          to="/wiki/$slug"
+          params={{ slug: view.page.slug }}
           search={{ v: undefined }}
           className="folio no-underline hover:text-[var(--ink)]"
         >
-          ← Back to the entry
+          ← Back to the page
         </Link>
       </div>
 
@@ -69,10 +71,10 @@ function EditPost() {
           Revise · current SHA @{view.sha.slice(0, 7)}
         </p>
         <h1 className="display text-[clamp(2.25rem,5.5vw,3.5rem)] font-semibold text-[var(--ink)]">
-          {view.post.title}
+          {view.page.title}
         </h1>
         <p className="byline mt-5 text-lg leading-relaxed text-[var(--ink-soft)]">
-          Saving clones the repo, overwrites <code>post.md</code>, commits your
+          Saving clones the repo, overwrites <code>page.md</code>, commits your
           changes, and pushes <code>main</code>. The previous SHA remains
           readable in the revisions.
         </p>
@@ -80,6 +82,16 @@ function EditPost() {
       </header>
 
       <form onSubmit={onSubmit} className="flex flex-col gap-6">
+        <label className="field">
+          <span className="field-label">Editor · optional</span>
+          <input
+            value={editor}
+            onChange={(e) => setEditor(e.target.value)}
+            placeholder="Your name for the revision history"
+            className="field-input"
+          />
+        </label>
+
         <label className="field">
           <span className="field-label">Title</span>
           <input
@@ -127,8 +139,8 @@ function EditPost() {
             {busy ? 'Committing & pushing…' : 'Commit revision'}
           </button>
           <Link
-            to="/posts/$slug"
-            params={{ slug: view.post.slug }}
+            to="/wiki/$slug"
+            params={{ slug: view.page.slug }}
             search={{ v: undefined }}
             className="folio no-underline hover:text-[var(--ink)]"
           >

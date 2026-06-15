@@ -8,9 +8,9 @@ function About() {
   return (
     <main className="measure px-4 pb-16 pt-10 sm:pt-14">
       <header className="ink-in mb-10 border-b border-[var(--rule)] pb-6">
-        <p className="folio mb-3">The colophon</p>
+        <p className="folio mb-3">About the wiki</p>
         <h1 className="display text-[clamp(2.5rem,7vw,5rem)] font-semibold text-[var(--ink)]">
-          A blog where every post is a{' '}
+          A wiki where every page is a{' '}
           <em
             className="italic"
             style={{
@@ -22,8 +22,8 @@ function About() {
           .
         </h1>
         <p className="byline mt-5 text-xl leading-relaxed text-[var(--ink-soft)]">
-          Most blogs keep their writing as rows in a database. This one does
-          too — but the row only holds metadata and a pointer.
+          Most wikis keep page content directly in a database. This one keeps
+          only metadata and a pointer there — the content itself lives in Git.
         </p>
       </header>
 
@@ -44,9 +44,9 @@ function About() {
           >
             Cloudflare Artifacts
           </a>
-          , which gives each entry its own versioned Git repository. Every edit
-          is a commit. Forking a post creates a new, independent repo. You can
-          even <code>git clone</code> any post to your laptop.
+          , which gives each page its own versioned Git repository. Every edit
+          is a commit. Forking a page creates a new, independent repo. You can
+          even <code>git clone</code> any page to your laptop.
         </p>
 
         <hr />
@@ -57,9 +57,9 @@ function About() {
       <pre className="mt-4 overflow-x-auto border border-[var(--rule)] bg-[var(--parchment-hi)] p-5 text-[13px] leading-[1.7] text-[var(--ink)]">
         <code className="border-0 bg-transparent p-0">{`D1  —  metadata                  Artifacts  —  content
 ┌───────────────────────┐        ┌────────────────────────────┐
-│ posts                 │        │  post-<slug>-<nonce>.git   │
+│ pages                 │        │  page-<slug>-<nonce>.git   │
 │   id                  │        │    main                    │
-│   slug                │   ─▶   │      post.md               │
+│   slug                │   ─▶   │      page.md               │
 │   title               │        │      meta.json             │
 │   repo_name      ─────┼────▶   │      README.md             │
 │   remote              │        │    history: a → b → c      │
@@ -79,16 +79,16 @@ function About() {
         <h2>What that gets you</h2>
         <ul>
           <li>
-            <strong>Time travel.</strong> Every past version of a post is still
-            renderable. See <code>/posts/&lt;slug&gt;/history</code>.
+            <strong>Time travel.</strong> Every past version of a page is still
+            renderable. See <code>/wiki/&lt;slug&gt;/history</code>.
           </li>
           <li>
             <strong>Forks.</strong> One click creates a new repo that diverges
-            independently. Readers become authors.
+            independently. Readers become contributors.
           </li>
           <li>
-            <strong>git clone.</strong> Every post page shows a{' '}
-            <code>git clone</code> command with a short-lived read token, minted
+            <strong>git clone.</strong> Every wiki page shows a{' '}
+            <code>git clone</code> command with a short-lived read/write token, minted
             on demand by a Worker.
           </li>
           <li>
@@ -101,7 +101,7 @@ function About() {
         <h2>Under the hood</h2>
         <ul>
           <li>
-            <code>env.ARTIFACTS.create(name)</code> for a new post;{' '}
+            <code>env.ARTIFACTS.create(name)</code> for a new page;{' '}
             <code>env.ARTIFACTS.get(name).fork(target)</code> for forks.
           </li>
           <li>
@@ -109,7 +109,7 @@ function About() {
             push, and read files at a given SHA — backed by the built-in{' '}
             <code>node:fs</code> virtual filesystem.
           </li>
-          <li>D1 for the post index (list page, slug routing).</li>
+          <li>D1 for the wiki index (list page, slug routing).</li>
           <li>
             TanStack Start server functions as the Worker entry point, with{' '}
             <code>import {'{ env }'} from "cloudflare:workers"</code>.

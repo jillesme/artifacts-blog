@@ -6,16 +6,16 @@ import {
 } from '@tanstack/react-router'
 import { useState } from 'react'
 import CloneSnippet from '../components/CloneSnippet'
-import { forkPost, getPost } from '../server/posts'
+import { forkPage, getPage } from '../server/pages'
 
-export const Route = createFileRoute('/posts/$slug/')({
-  component: PostView,
+export const Route = createFileRoute('/wiki/$slug/')({
+  component: PageView,
   validateSearch: (search: Record<string, unknown>) => ({
     v: typeof search.v === 'string' ? (search.v as string) : undefined,
   }),
   loaderDeps: ({ search }) => ({ v: search.v }),
   loader: async ({ params, deps }) => {
-    const view = await getPost({ data: { slug: params.slug, sha: deps.v } })
+    const view = await getPage({ data: { slug: params.slug, sha: deps.v } })
     if (!view) throw notFound()
     return view
   },
@@ -31,7 +31,7 @@ function formatDate(ts: number): string {
     .toUpperCase()
 }
 
-function PostView() {
+function PageView() {
   const view = Route.useLoaderData()
   const navigate = useNavigate()
   const [forking, setForking] = useState(false)
@@ -41,9 +41,9 @@ function PostView() {
     setForking(true)
     setError(null)
     try {
-      const res = await forkPost({ data: { slug: view.post.slug } })
+      const res = await forkPage({ data: { slug: view.page.slug } })
       navigate({
-        to: '/posts/$slug',
+        to: '/wiki/$slug',
         params: { slug: res.slug },
         search: { v: undefined },
       })
@@ -57,7 +57,7 @@ function PostView() {
     <main className="measure px-4 pb-16 pt-10 sm:pt-14">
       <div className="mb-8">
         <Link to="/" className="folio no-underline hover:text-[var(--ink)]">
-          ← Return to the index
+          ← Return to the wiki index
         </Link>
       </div>
 
@@ -68,11 +68,11 @@ function PostView() {
         >
           <p className="smallcaps mb-1">An earlier draft</p>
           <p className="m-0 text-[var(--ink-soft)]">
-            You are reading this entry at commit{' '}
+            You are reading this page at commit{' '}
             <code>{view.sha.slice(0, 7)}</code>.{' '}
             <Link
-              to="/posts/$slug"
-              params={{ slug: view.post.slug }}
+              to="/wiki/$slug"
+              params={{ slug: view.page.slug }}
               search={{ v: undefined }}
               className="font-medium"
             >
@@ -85,19 +85,19 @@ function PostView() {
       {/* ── Article head ──────────────────────────────────────────── */}
       <header className="ink-in mb-10">
         <p className="folio mb-4">
-          {formatDate(view.post.created_at)} · by{' '}
-          <span className="text-[var(--ink-soft)]">{view.post.author}</span>
-          {view.post.forked_from ? (
+          {formatDate(view.page.created_at)} · created by{' '}
+          <span className="text-[var(--ink-soft)]">{view.page.author}</span>
+          {view.page.forked_from ? (
             <>
               {' · '}
               <span className="normal-case tracking-normal">
                 forked from{' '}
                 <Link
-                  to="/posts/$slug"
-                  params={{ slug: view.post.forked_from }}
+                  to="/wiki/$slug"
+                  params={{ slug: view.page.forked_from }}
                   search={{ v: undefined }}
                 >
-                  {view.post.forked_from}
+                  {view.page.forked_from}
                 </Link>
               </span>
             </>
@@ -105,12 +105,12 @@ function PostView() {
         </p>
 
         <h1 className="display text-[clamp(2.5rem,6vw,4.5rem)] font-semibold text-[var(--ink)]">
-          {view.post.title}
+          {view.page.title}
         </h1>
 
-        {view.post.summary ? (
+        {view.page.summary ? (
           <p className="byline mt-5 text-xl leading-relaxed text-[var(--ink-soft)] sm:text-2xl">
-            {view.post.summary}
+            {view.page.summary}
           </p>
         ) : null}
 
@@ -147,33 +147,33 @@ function PostView() {
 
       {/* ── Article footer: actions ──────────────────────────────── */}
       <section
-        aria-label="Entry actions"
+          aria-label="Page actions"
         className="border-y border-[var(--rule)] py-5"
       >
         <div className="flex flex-wrap items-center gap-3">
           <Link
-            to="/posts/$slug/edit"
-            params={{ slug: view.post.slug }}
+            to="/wiki/$slug/edit"
+            params={{ slug: view.page.slug }}
             className="btn-ghost"
           >
-            Edit (new commit)
+            Edit page
           </Link>
           <Link
-            to="/posts/$slug/history"
-            params={{ slug: view.post.slug }}
+            to="/wiki/$slug/history"
+            params={{ slug: view.page.slug }}
             className="btn-ghost"
           >
-            Revisions
+            Revision history
           </Link>
           <button onClick={onFork} disabled={forking} className="btn-primary">
-            {forking ? 'Forking the repo…' : 'Fork this entry'}
+            {forking ? 'Forking the repo…' : 'Fork this page'}
           </button>
         </div>
         {error ? <p className="note-error mt-4">{error}</p> : null}
       </section>
 
       <div className="mt-8">
-        <CloneSnippet slug={view.post.slug} />
+        <CloneSnippet slug={view.page.slug} />
       </div>
     </main>
   )

@@ -3,12 +3,12 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   deleteOrphanArtifactRepo,
   deleteOrphanArtifactRepos,
-  deletePostFamily,
+  deletePageFamily,
   listAdminState,
   previewDeleteFamily,
   type AdminState,
-  type PostRow,
-} from '../server/posts'
+  type PageRow,
+} from '../server/pages'
 
 export const Route = createFileRoute('/jilles')({
   component: JillesAdmin,
@@ -39,8 +39,8 @@ function JillesAdmin() {
   const [notice, setNotice] = useState<string | null>(null)
   const [query, setQuery] = useState('on-artifacts')
   const [selectedSlug, setSelectedSlug] = useState('')
-  const [family, setFamily] = useState<PostRow[]>([])
-  const [postConfirm, setPostConfirm] = useState('')
+  const [family, setFamily] = useState<PageRow[]>([])
+  const [pageConfirm, setPageConfirm] = useState('')
   const [repoConfirm, setRepoConfirm] = useState('')
   const [orphanConfirm, setOrphanConfirm] = useState('')
   const [repoName, setRepoName] = useState('')
@@ -52,7 +52,7 @@ function JillesAdmin() {
       const next = await listAdminState({ data: { adminKey: key || undefined } })
       setState(next)
       setSelectedSlug((slug) =>
-        slug && next.posts.some((post) => post.slug === slug) ? slug : '',
+        slug && next.pages.some((page) => page.slug === slug) ? slug : '',
       )
       window.localStorage.setItem('jilles-admin-key', key)
     } catch (err) {
@@ -84,7 +84,7 @@ function JillesAdmin() {
       .catch((err) => {
         if (!cancelled) setFamily([])
         const message = err instanceof Error ? err.message : String(err)
-        if (!cancelled && selectedSlug && !message.includes('Post not found:')) {
+        if (!cancelled && selectedSlug && !message.includes('Page not found:')) {
           setError(message)
         }
       })
@@ -97,17 +97,17 @@ function JillesAdmin() {
     }
   }, [adminKey, selectedSlug])
 
-  const filteredPosts = useMemo(() => {
+  const filteredPages = useMemo(() => {
     const needle = query.trim().toLowerCase()
-    const posts = state?.posts ?? []
-    if (!needle) return posts
-    return posts.filter((post) =>
-      [post.slug, post.title, post.author, post.repo_name, post.forked_from ?? '']
+    const pages = state?.pages ?? []
+    if (!needle) return pages
+    return pages.filter((page) =>
+      [page.slug, page.title, page.author, page.repo_name, page.forked_from ?? '']
         .join(' ')
         .toLowerCase()
         .includes(needle),
     )
-  }, [query, state?.posts])
+  }, [query, state?.pages])
 
   const orphanRepos = useMemo(
     () => (state?.repos ?? []).filter((repo) => !repo.indexedSlug),
@@ -121,19 +121,19 @@ function JillesAdmin() {
     setError(null)
     setNotice(null)
     try {
-      const result = await deletePostFamily({
+      const result = await deletePageFamily({
         data: {
           slug: selectedSlug,
-          confirm: postConfirm,
+          confirm: pageConfirm,
           adminKey: adminKey || undefined,
         },
       })
       setNotice(
-        `Deleted ${result.deletedPosts.length} post rows and ${result.deletedRepos.length} Artifacts repos: ${humanJoin(
-          result.deletedPosts.map((post) => post.slug),
+        `Deleted ${result.deletedPages.length} page rows and ${result.deletedRepos.length} Artifacts repos: ${humanJoin(
+          result.deletedPages.map((page) => page.slug),
         )}`,
       )
-      setPostConfirm('')
+      setPageConfirm('')
       setFamily([])
       await refresh()
     } catch (err) {
@@ -215,7 +215,7 @@ function JillesAdmin() {
             <p className="byline mt-5 max-w-2xl text-xl leading-relaxed text-[var(--ink-soft)]">
               A deliberately unlinked admin desk for deleting the D1 index row
               and the backing Cloudflare Artifacts Git repo in one pass. Forks
-              below a post are swept up before the ledger line is crossed out.
+              below a page are swept up before the ledger line is crossed out.
             </p>
           </div>
           <form
@@ -251,8 +251,8 @@ function JillesAdmin() {
 
       <section className="mb-10 grid gap-4 sm:grid-cols-4">
         <div className="border-y border-[var(--rule)] py-4">
-          <p className="folio">D1 posts</p>
-          <p className="display mt-1 text-4xl font-semibold">{state?.posts.length ?? '—'}</p>
+          <p className="folio">D1 pages</p>
+          <p className="display mt-1 text-4xl font-semibold">{state?.pages.length ?? '—'}</p>
         </div>
         <div className="border-y border-[var(--rule)] py-4">
           <p className="folio">Artifacts repos</p>
@@ -271,12 +271,12 @@ function JillesAdmin() {
       </section>
 
       <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-        <section className="min-w-0" aria-labelledby="posts-heading">
+        <section className="min-w-0" aria-labelledby="pages-heading">
           <header className="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-[var(--rule)] pb-4">
             <div>
               <p className="folio">Cascade deletion</p>
-              <h2 id="posts-heading" className="display text-3xl font-semibold">
-                Indexed posts & forks
+              <h2 id="pages-heading" className="display text-3xl font-semibold">
+                Indexed pages & forks
               </h2>
             </div>
             <input
@@ -288,43 +288,43 @@ function JillesAdmin() {
           </header>
 
           <div className="max-h-[720px] overflow-auto border-y border-[var(--rule)]">
-            {filteredPosts.map((post) => (
+            {filteredPages.map((page) => (
               <article
-                key={post.id}
+                key={page.id}
                 className={`grid gap-3 border-b border-[var(--rule-soft)] p-4 sm:grid-cols-[1fr_auto] ${
-                  selectedSlug === post.slug ? 'bg-[var(--parchment-hi)]' : ''
+                  selectedSlug === page.slug ? 'bg-[var(--parchment-hi)]' : ''
                 }`}
               >
                 <div className="min-w-0">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <span className="tag tag-accent">{post.slug}</span>
-                    {post.forked_from ? (
-                      <span className="tag tag-moss">fork of {post.forked_from}</span>
+                    <span className="tag tag-accent">{page.slug}</span>
+                    {page.forked_from ? (
+                      <span className="tag tag-moss">fork of {page.forked_from}</span>
                     ) : null}
-                    {post.fork_count ? (
-                      <span className="tag">{post.fork_count} forks</span>
+                    {page.fork_count ? (
+                      <span className="tag">{page.fork_count} forks</span>
                     ) : null}
                   </div>
                   <h3 className="display truncate text-2xl font-semibold">
                     <Link
-                      to="/posts/$slug"
-                      params={{ slug: post.slug }}
+                      to="/wiki/$slug"
+                      params={{ slug: page.slug }}
                       search={{ v: undefined }}
                       className="text-[var(--ink)] no-underline"
                     >
-                      {post.title}
+                      {page.title}
                     </Link>
                   </h3>
                   <p className="m-0 mt-2 break-all font-mono text-xs text-[var(--ink-soft)]">
-                    {post.repo_name} · @{post.current_sha.slice(0, 7)} ·{' '}
-                    {formatDate(post.created_at)}
+                    {page.repo_name} · @{page.current_sha.slice(0, 7)} ·{' '}
+                    {formatDate(page.created_at)}
                   </p>
                 </div>
                 <button
                   className="btn-ghost self-center"
                   onClick={() => {
-                    setSelectedSlug(post.slug)
-                    setPostConfirm('')
+                    setSelectedSlug(page.slug)
+                    setPageConfirm('')
                   }}
                   type="button"
                 >
@@ -356,7 +356,7 @@ function JillesAdmin() {
                 value={selectedSlug}
                 onChange={(e) => {
                   setSelectedSlug(e.target.value.trim())
-                  setPostConfirm('')
+                  setPageConfirm('')
                 }}
                 className="field-input"
               />
@@ -368,11 +368,11 @@ function JillesAdmin() {
               </p>
               {family.length ? (
                 <ol className="m-0 grid gap-2 p-0">
-                  {family.map((post) => (
-                    <li key={post.id} className="list-none text-sm">
-                      <span className="font-semibold">{post.slug}</span>
+                  {family.map((page) => (
+                    <li key={page.id} className="list-none text-sm">
+                      <span className="font-semibold">{page.slug}</span>
                       <br />
-                      <code>{post.repo_name}</code>
+                      <code>{page.repo_name}</code>
                     </li>
                   ))}
                 </ol>
@@ -384,15 +384,15 @@ function JillesAdmin() {
             <label className="field">
               <span className="field-label">Type {confirmPhrase}</span>
               <input
-                value={postConfirm}
-                onChange={(e) => setPostConfirm(e.target.value)}
+                value={pageConfirm}
+                onChange={(e) => setPageConfirm(e.target.value)}
                 className="field-input"
                 placeholder={confirmPhrase}
               />
             </label>
             <button
               className="btn-primary mt-4 border-[var(--oxblood)] bg-[var(--oxblood)]"
-              disabled={!family.length || postConfirm !== confirmPhrase || busy !== null}
+              disabled={!family.length || pageConfirm !== confirmPhrase || busy !== null}
               type="submit"
             >
               {busy?.startsWith('delete:') ? 'Deleting repos…' : 'Delete D1 rows + repos'}
@@ -420,7 +420,7 @@ function JillesAdmin() {
                 }}
                 className="field-input"
                 list="orphan-repos"
-                placeholder="post-something-a1b2c3"
+                placeholder="page-something-a1b2c3"
               />
               <datalist id="orphan-repos">
                 {orphanRepos.map((repo) => (
@@ -454,7 +454,7 @@ function JillesAdmin() {
             <h2 className="display text-2xl font-semibold">Delete all orphans</h2>
             <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">
               Deletes every Artifacts repo that is not referenced by the D1
-              <code>posts</code> table. Currently staged:{' '}
+              <code>pages</code> table. Currently staged:{' '}
               <strong>{orphanRepos.length}</strong>.
             </p>
             {orphanRepos.length ? (

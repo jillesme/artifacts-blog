@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
-import { getHistory } from '../server/posts'
+import { getHistory } from '../server/pages'
 
-export const Route = createFileRoute('/posts/$slug/history')({
+export const Route = createFileRoute('/wiki/$slug/history')({
   component: History,
   loader: async ({ params }) => {
     const data = await getHistory({ data: { slug: params.slug } })
@@ -23,30 +23,30 @@ function formatTimestamp(ms: number): string {
 }
 
 function History() {
-  const { post, commits } = Route.useLoaderData()
+  const { page, commits } = Route.useLoaderData()
 
   return (
     <main className="measure-wide px-4 pb-16 pt-10 sm:pt-14">
       <div className="mb-6">
         <Link
-          to="/posts/$slug"
-          params={{ slug: post.slug }}
+          to="/wiki/$slug"
+          params={{ slug: page.slug }}
           search={{ v: undefined }}
           className="folio no-underline hover:text-[var(--ink)]"
         >
-          ← Back to the entry
+          ← Back to the page
         </Link>
       </div>
 
       <header className="ink-in mb-10 border-b border-[var(--rule)] pb-6">
-        <p className="folio mb-3">The revisions</p>
+        <p className="folio mb-3">Revision history</p>
         <h1 className="display text-[clamp(2.25rem,5.5vw,3.75rem)] font-semibold text-[var(--ink)]">
-          {post.title}
+          {page.title}
         </h1>
         <p className="byline mt-4 text-lg leading-relaxed text-[var(--ink-soft)]">
-          Every commit ever pushed to <code>{post.repo_name}</code> on{' '}
+          Every commit ever pushed to <code>{page.repo_name}</code> on{' '}
           <code>main</code>. Click a SHA to render that exact version of the
-          entry.
+          page.
         </p>
       </header>
 
@@ -58,7 +58,7 @@ function History() {
         />
 
         {commits.map((c, idx) => {
-          const isCurrent = c.sha === post.current_sha
+          const isCurrent = c.sha === page.current_sha
           const isInitial = idx === commits.length - 1
           return (
             <li
@@ -99,8 +99,8 @@ function History() {
 
               <div className="mt-3">
                 <Link
-                  to="/posts/$slug"
-                  params={{ slug: post.slug }}
+                  to="/wiki/$slug"
+                  params={{ slug: page.slug }}
                   search={{ v: c.sha }}
                   className="text-sm font-medium text-[var(--oxblood)]"
                 >

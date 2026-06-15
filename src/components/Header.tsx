@@ -25,16 +25,16 @@ export default function Header() {
 
       {/* ── Nameplate ─────────────────────────────────────────────────── */}
       <div className="measure-wide flex flex-col items-center gap-2 pt-6 text-center sm:pt-7">
-        <p className="kicker">The Git-Backed Broadsheet</p>
+        <p className="kicker">The Git-Backed Wiki</p>
         <Link
           to="/"
-          aria-label="The Cloudflare Artifacts — home"
+          aria-label="The Cloudflare Artifacts Wiki — home"
           className="nameplate text-[clamp(2.4rem,7.2vw,4.8rem)] no-underline"
         >
-          The <em>Cloudflare</em> Artifacts
+          The <em>Cloudflare</em> Artifacts Wiki
         </Link>
         <p className="smallcaps mt-1">
-          Every entry is a real Git repository · est. MMXXVI
+          Every page is a real Git repository · est. MMXXVI
         </p>
       </div>
 
@@ -54,21 +54,21 @@ export default function Header() {
             activeProps={{ className: 'nav-link is-active' }}
             activeOptions={{ exact: true }}
           >
-            Front Page
+            Index
           </Link>
           <Link
             to="/new"
             className="nav-link"
             activeProps={{ className: 'nav-link is-active' }}
           >
-            Compose
+            New Page
           </Link>
           <Link
             to="/about"
             className="nav-link"
             activeProps={{ className: 'nav-link is-active' }}
           >
-            Colophon
+            About
           </Link>
         </nav>
         <ThemeToggle />

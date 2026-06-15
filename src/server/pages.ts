@@ -2,8 +2,8 @@
  * Server functions: the bridge between the React UI and Cloudflare.
  *
  * Data split:
- *   - D1 (`posts` table) holds post metadata + a pointer (repo_name, current_sha)
- *   - Artifacts holds the actual content as a real Git repo per post
+ *   - D1 (`pages` table) holds page metadata + a pointer (repo_name, current_sha)
+ *   - Artifacts holds the actual content as a real Git repo per page
  *
  * Every mutation pushes a commit to Artifacts, then updates `current_sha` in D1.
  */
@@ -13,20 +13,20 @@ import { env } from 'cloudflare:workers'
 import { marked } from 'marked'
 
 import {
-  createPostRepo,
-  forkPostRepo,
+  createPageRepo,
+  forkPageRepo,
   readHistory,
-  readPost,
-  updatePost,
+  readPage,
+  updatePage,
   type CommitEntry,
-  type PostMeta,
+  type PageMeta,
 } from './artifactsGit'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface PostRow {
+export interface PageRow {
   id: number
   slug: string
   title: string
@@ -41,15 +41,15 @@ export interface PostRow {
   updated_at: number
 }
 
-export interface PostView {
-  post: PostRow
+export interface PageView {
+  page: PageRow
   html: string
   markdown: string
   sha: string
   isHistorical: boolean
 }
 
-export interface AdminPostRow extends PostRow {
+export interface AdminPageRow extends PageRow {
   fork_count: number
 }
 
@@ -67,14 +67,14 @@ export interface AdminRepoRow {
 }
 
 export interface AdminState {
-  posts: AdminPostRow[]
+  pages: AdminPageRow[]
   repos: AdminRepoRow[]
   adminKeyConfigured: boolean
 }
 
 export interface DeleteFamilyResult {
   rootSlug: string
-  deletedPosts: PostRow[]
+  deletedPages: PageRow[]
   deletedRepos: { name: string; deleted: boolean }[]
 }
 
@@ -100,12 +100,12 @@ function slugify(input: string): string {
 }
 
 async function uniqueSlug(base: string): Promise<string> {
-  let slug = base || 'post'
+  let slug = base || 'page'
   let attempt = 0
   // Try `slug`, `slug-2`, `slug-3`, … until unused.
   while (true) {
     const candidate = attempt === 0 ? slug : `${slug}-${attempt + 1}`
-    const row = await env.DB.prepare('SELECT id FROM posts WHERE slug = ?')
+    const row = await env.DB.prepare('SELECT id FROM pages WHERE slug = ?')
       .bind(candidate)
       .first()
     if (!row) return candidate
@@ -116,7 +116,7 @@ async function uniqueSlug(base: string): Promise<string> {
 
 function repoNameFor(slug: string): string {
   // Artifacts repo names are scoped per-namespace; keep them tight and stable.
-  return `post-${slug}-${crypto.randomUUID().slice(0, 6)}`
+  return `page-${slug}-${crypto.randomUUID().slice(0, 6)}`
 }
 
 function renderMarkdown(md: string): string {
@@ -124,10 +124,10 @@ function renderMarkdown(md: string): string {
   return marked.parse(md, { async: false }) as string
 }
 
-async function getPostBySlug(slug: string): Promise<PostRow | null> {
-  const row = await env.DB.prepare('SELECT * FROM posts WHERE slug = ?')
+async function getPageBySlug(slug: string): Promise<PageRow | null> {
+  const row = await env.DB.prepare('SELECT * FROM pages WHERE slug = ?')
     .bind(slug)
-    .first<PostRow>()
+    .first<PageRow>()
   return row ?? null
 }
 
@@ -146,31 +146,31 @@ function assertAdmin(inputKey?: string): void {
   }
 }
 
-async function getPostFamily(rootSlug: string): Promise<PostRow[]> {
+async function getPageFamily(rootSlug: string): Promise<PageRow[]> {
   const result = await env.DB.prepare(
     `WITH RECURSIVE family AS (
-       SELECT * FROM posts WHERE slug = ?
+       SELECT * FROM pages WHERE slug = ?
        UNION
-       SELECT p.* FROM posts p
+       SELECT p.* FROM pages p
        JOIN family f ON p.forked_from = f.slug
      )
      SELECT * FROM family ORDER BY created_at ASC`,
   )
     .bind(rootSlug)
-    .all<PostRow>()
+    .all<PageRow>()
 
-  return (result.results ?? []) as PostRow[]
+  return (result.results ?? []) as PageRow[]
 }
 
-async function deletePostFamilyRows(rootSlug: string): Promise<number> {
+async function deletePageFamilyRows(rootSlug: string): Promise<number> {
   const result = await env.DB.prepare(
     `WITH RECURSIVE family(slug) AS (
-       SELECT slug FROM posts WHERE slug = ?
+       SELECT slug FROM pages WHERE slug = ?
        UNION
-       SELECT p.slug FROM posts p
+       SELECT p.slug FROM pages p
        JOIN family f ON p.forked_from = f.slug
      )
-     DELETE FROM posts WHERE slug IN (SELECT slug FROM family)`,
+     DELETE FROM pages WHERE slug IN (SELECT slug FROM family)`,
   )
     .bind(rootSlug)
     .run()
@@ -182,35 +182,35 @@ async function deletePostFamilyRows(rootSlug: string): Promise<number> {
 // Server functions
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const listPosts = createServerFn({ method: 'GET' }).handler(async () => {
+export const listPages = createServerFn({ method: 'GET' }).handler(async () => {
   const result = await env.DB.prepare(
-    'SELECT * FROM posts ORDER BY created_at DESC LIMIT 100',
-  ).all<PostRow>()
-  return (result.results ?? []) as PostRow[]
+    'SELECT * FROM pages ORDER BY updated_at DESC LIMIT 100',
+  ).all<PageRow>()
+  return (result.results ?? []) as PageRow[]
 })
 
-export const getPost = createServerFn({ method: 'GET' })
+export const getPage = createServerFn({ method: 'GET' })
   .inputValidator((data: { slug: string; sha?: string }) => data)
-  .handler(async ({ data }): Promise<PostView | null> => {
-    const post = await getPostBySlug(data.slug)
-    if (!post) return null
+  .handler(async ({ data }): Promise<PageView | null> => {
+    const page = await getPageBySlug(data.slug)
+    if (!page) return null
 
-    const rendered = await readPost(
+    const rendered = await readPage(
       env,
-      post.repo_name,
-      post.remote,
+      page.repo_name,
+      page.remote,
       data.sha,
     )
     return {
-      post,
+      page,
       markdown: rendered.markdown,
       html: renderMarkdown(rendered.markdown),
       sha: rendered.sha,
-      isHistorical: Boolean(data.sha) && data.sha !== post.current_sha,
+      isHistorical: Boolean(data.sha) && data.sha !== page.current_sha,
     }
   })
 
-export const createPost = createServerFn({ method: 'POST' })
+export const createPage = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: {
       title: string
@@ -231,79 +231,80 @@ export const createPost = createServerFn({ method: 'POST' })
     const repoName = repoNameFor(slug)
     const now = Date.now()
 
-    const meta: PostMeta = {
+    const meta: PageMeta = {
       title,
       author,
       summary: summary ?? undefined,
       createdAt: new Date(now).toISOString(),
     }
 
-    const { remote, sha } = await createPostRepo(env, repoName, body, meta)
+    const { remote, sha } = await createPageRepo(env, repoName, body, meta)
 
     await env.DB.prepare(
-      `INSERT INTO posts (slug, title, author, summary, namespace, repo_name, remote, current_sha, created_at, updated_at)
+      `INSERT INTO pages (slug, title, author, summary, namespace, repo_name, remote, current_sha, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
-      .bind(slug, title, author, summary, 'blog', repoName, remote, sha, now, now)
+      .bind(slug, title, author, summary, 'wiki', repoName, remote, sha, now, now)
       .run()
 
     return { slug }
   })
 
-export const editPost = createServerFn({ method: 'POST' })
+export const editPage = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { slug: string; title: string; summary?: string; body: string; message?: string }) =>
+    (data: { slug: string; title: string; summary?: string; body: string; message?: string; editor?: string }) =>
       data,
   )
   .handler(async ({ data }) => {
-    const post = await getPostBySlug(data.slug)
-    if (!post) throw new Error(`Post not found: ${data.slug}`)
-    const title = data.title.trim() || post.title
-    const summary = data.summary?.trim() || post.summary || undefined
+    const page = await getPageBySlug(data.slug)
+    if (!page) throw new Error(`Page not found: ${data.slug}`)
+    const title = data.title.trim() || page.title
+    const summary = data.summary?.trim() || page.summary || undefined
     const body = data.body.trim()
     if (!body) throw new Error('Body is required')
 
-    const meta: PostMeta = {
+    const meta: PageMeta = {
       title,
-      author: post.author,
+      author: page.author,
       summary,
-      createdAt: new Date(post.created_at).toISOString(),
-      forkedFrom: post.forked_from ?? undefined,
+      createdAt: new Date(page.created_at).toISOString(),
+      forkedFrom: page.forked_from ?? undefined,
     }
 
     const message = (data.message?.trim() || `Edit: ${title}`).slice(0, 140)
-    const sha = await updatePost(env, post.repo_name, post.remote, body, meta, message)
+    const editor = (data.editor?.trim() || page.author || 'anonymous').slice(0, 80)
+    const sha = await updatePage(env, page.repo_name, page.remote, body, meta, message, editor)
 
     await env.DB.prepare(
-      `UPDATE posts SET title = ?, summary = ?, current_sha = ?, updated_at = ? WHERE id = ?`,
+      `UPDATE pages SET title = ?, summary = ?, current_sha = ?, updated_at = ? WHERE id = ?`,
     )
-      .bind(title, summary ?? null, sha, Date.now(), post.id)
+      .bind(title, summary ?? null, sha, Date.now(), page.id)
       .run()
 
-    return { slug: post.slug, sha }
+    return { slug: page.slug, sha }
   })
 
 export const getHistory = createServerFn({ method: 'GET' })
   .inputValidator((data: { slug: string }) => data)
-  .handler(async ({ data }): Promise<{ post: PostRow; commits: CommitEntry[] } | null> => {
-    const post = await getPostBySlug(data.slug)
-    if (!post) return null
-    const commits = await readHistory(env, post.repo_name, post.remote)
-    return { post, commits }
+  .handler(async ({ data }): Promise<{ page: PageRow; commits: CommitEntry[] } | null> => {
+    const page = await getPageBySlug(data.slug)
+    if (!page) return null
+    const commits = await readHistory(env, page.repo_name, page.remote)
+    return { page, commits }
   })
 
-export const forkPost = createServerFn({ method: 'POST' })
+export const forkPage = createServerFn({ method: 'POST' })
   .inputValidator((data: { slug: string; author?: string }) => data)
   .handler(async ({ data }) => {
-    const source = await getPostBySlug(data.slug)
-    if (!source) throw new Error(`Post not found: ${data.slug}`)
+    const source = await getPageBySlug(data.slug)
+    if (!source) throw new Error(`Page not found: ${data.slug}`)
 
     const forkSlugBase = `${source.slug}-fork`
     const slug = await uniqueSlug(forkSlugBase)
     const repoName = repoNameFor(slug)
     const author = (data.author?.trim() || 'anonymous').slice(0, 60)
 
-    const { remote, sha } = await forkPostRepo(
+    const { remote, sha } = await forkPageRepo(
       env,
       source.repo_name,
       repoName,
@@ -312,7 +313,7 @@ export const forkPost = createServerFn({ method: 'POST' })
 
     const now = Date.now()
     await env.DB.prepare(
-      `INSERT INTO posts (slug, title, author, summary, namespace, repo_name, remote, current_sha, forked_from, created_at, updated_at)
+      `INSERT INTO pages (slug, title, author, summary, namespace, repo_name, remote, current_sha, forked_from, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
@@ -320,7 +321,7 @@ export const forkPost = createServerFn({ method: 'POST' })
         `Fork: ${source.title}`,
         author,
         source.summary,
-        'blog',
+        'wiki',
         repoName,
         remote,
         sha,
@@ -335,21 +336,21 @@ export const forkPost = createServerFn({ method: 'POST' })
 
 /**
  * Mint a short-lived read/write token so a visitor can both `git clone` and
- * `git push` to the post's repo.
+ * `git push` to the page's repo.
  *
- * NOTE: this is a public, unauthenticated demo — anyone loading the post page
+  * NOTE: this is a public, unauthenticated demo — anyone loading the wiki page
  * can request a token and push commits directly to `main`. Don't reuse this
  * pattern verbatim for anything with real editorial authority.
  */
 export const mintCloneToken = createServerFn({ method: 'POST' })
   .inputValidator((data: { slug: string }) => data)
   .handler(async ({ data }) => {
-    const post = await getPostBySlug(data.slug)
-    if (!post) throw new Error(`Post not found: ${data.slug}`)
-    const repo = await env.ARTIFACTS.get(post.repo_name)
+    const page = await getPageBySlug(data.slug)
+    if (!page) throw new Error(`Page not found: ${data.slug}`)
+    const repo = await env.ARTIFACTS.get(page.repo_name)
     const token = await repo.createToken('write', 900)
     return {
-      remote: post.remote,
+      remote: page.remote,
       token: token.plaintext,
       expiresAt: token.expiresAt,
     }
@@ -360,22 +361,22 @@ export const listAdminState = createServerFn({ method: 'GET' })
   .handler(async ({ data }): Promise<AdminState> => {
     assertAdmin(data.adminKey)
 
-    const postResult = await env.DB.prepare(
+    const pageResult = await env.DB.prepare(
       `SELECT p.*,
-              (SELECT COUNT(*) FROM posts child WHERE child.forked_from = p.slug) AS fork_count
-       FROM posts p
-       ORDER BY p.created_at DESC
+              (SELECT COUNT(*) FROM pages child WHERE child.forked_from = p.slug) AS fork_count
+       FROM pages p
+        ORDER BY p.updated_at DESC
        LIMIT 500`,
-    ).all<AdminPostRow>()
-    const posts = (postResult.results ?? []) as AdminPostRow[]
+    ).all<AdminPageRow>()
+    const pages = (pageResult.results ?? []) as AdminPageRow[]
 
-    const slugByRepo = new Map(posts.map((post) => [post.repo_name, post.slug]))
+    const slugByRepo = new Map(pages.map((page) => [page.repo_name, page.slug]))
     const repos: AdminRepoRow[] = []
     let cursor: string | undefined
     do {
-      const page = await env.ARTIFACTS.list({ limit: 200, cursor })
+      const repoPage = await env.ARTIFACTS.list({ limit: 200, cursor })
       repos.push(
-        ...page.repos.map((repo) => ({
+        ...repoPage.repos.map((repo) => ({
           id: repo.id,
           name: repo.name,
           description: repo.description,
@@ -388,11 +389,11 @@ export const listAdminState = createServerFn({ method: 'GET' })
           indexedSlug: slugByRepo.get(repo.name) ?? null,
         })),
       )
-      cursor = page.cursor
+      cursor = repoPage.cursor
     } while (cursor)
 
     return {
-      posts,
+      pages,
       repos,
       adminKeyConfigured: Boolean(configuredAdminKey()),
     }
@@ -400,14 +401,14 @@ export const listAdminState = createServerFn({ method: 'GET' })
 
 export const previewDeleteFamily = createServerFn({ method: 'GET' })
   .inputValidator((data: { slug: string; adminKey?: string }) => data)
-  .handler(async ({ data }): Promise<PostRow[]> => {
+  .handler(async ({ data }): Promise<PageRow[]> => {
     assertAdmin(data.adminKey)
-    const family = await getPostFamily(data.slug)
-    if (family.length === 0) throw new Error(`Post not found: ${data.slug}`)
+    const family = await getPageFamily(data.slug)
+    if (family.length === 0) throw new Error(`Page not found: ${data.slug}`)
     return family
   })
 
-export const deletePostFamily = createServerFn({ method: 'POST' })
+export const deletePageFamily = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: { slug: string; confirm: string; adminKey?: string }) => data,
   )
@@ -420,29 +421,29 @@ export const deletePostFamily = createServerFn({ method: 'POST' })
       throw new Error(`Type DELETE ${slug} to confirm`)
     }
 
-    const family = await getPostFamily(slug)
-    if (family.length === 0) throw new Error(`Post not found: ${slug}`)
+    const family = await getPageFamily(slug)
+    if (family.length === 0) throw new Error(`Page not found: ${slug}`)
 
     const deletedRepos: DeleteFamilyResult['deletedRepos'] = []
-    for (const post of family) {
+    for (const page of family) {
       try {
-        const deleted = await env.ARTIFACTS.delete(post.repo_name)
-        deletedRepos.push({ name: post.repo_name, deleted })
+        const deleted = await env.ARTIFACTS.delete(page.repo_name)
+        deletedRepos.push({ name: page.repo_name, deleted })
       } catch (err) {
         throw new Error(
-          `Stopped before deleting D1 rows: failed to delete ${post.repo_name}: ${err instanceof Error ? err.message : String(err)}`,
+          `Stopped before deleting D1 rows: failed to delete ${page.repo_name}: ${err instanceof Error ? err.message : String(err)}`,
         )
       }
     }
 
-    const deletedRows = await deletePostFamilyRows(slug)
+    const deletedRows = await deletePageFamilyRows(slug)
     if (deletedRows !== family.length) {
       throw new Error(
         `Deleted ${deletedRepos.length} Artifacts repos, but D1 removed ${deletedRows}/${family.length} rows. Refresh before retrying.`,
       )
     }
 
-    return { rootSlug: slug, deletedPosts: family, deletedRepos }
+    return { rootSlug: slug, deletedPages: family, deletedRepos }
   })
 
 export const deleteOrphanArtifactRepo = createServerFn({ method: 'POST' })
@@ -458,12 +459,12 @@ export const deleteOrphanArtifactRepo = createServerFn({ method: 'POST' })
       throw new Error(`Type DELETE ${repoName} to confirm`)
     }
 
-    const linked = await env.DB.prepare('SELECT slug FROM posts WHERE repo_name = ?')
+    const linked = await env.DB.prepare('SELECT slug FROM pages WHERE repo_name = ?')
       .bind(repoName)
       .first<{ slug: string }>()
     if (linked) {
       throw new Error(
-        `Repo ${repoName} is indexed as /posts/${linked.slug}; delete the post lineage instead so D1 stays consistent.`,
+        `Repo ${repoName} is indexed as /wiki/${linked.slug}; delete the page lineage instead so D1 stays consistent.`,
       )
     }
 
@@ -480,7 +481,7 @@ export const deleteOrphanArtifactRepos = createServerFn({ method: 'POST' })
     }
 
     const indexedResult = await env.DB.prepare(
-      'SELECT repo_name FROM posts LIMIT 10000',
+      'SELECT repo_name FROM pages LIMIT 10000',
     ).all<{ repo_name: string }>()
     const indexed = new Set(
       ((indexedResult.results ?? []) as { repo_name: string }[]).map(
@@ -491,13 +492,13 @@ export const deleteOrphanArtifactRepos = createServerFn({ method: 'POST' })
     const orphanNames: string[] = []
     let cursor: string | undefined
     do {
-      const page = await env.ARTIFACTS.list({ limit: 200, cursor })
+      const repoPage = await env.ARTIFACTS.list({ limit: 200, cursor })
       orphanNames.push(
-        ...page.repos
+        ...repoPage.repos
           .map((repo) => repo.name)
           .filter((name) => !indexed.has(name)),
       )
-      cursor = page.cursor
+      cursor = repoPage.cursor
     } while (cursor)
 
     const deletedRepos: DeleteOrphansResult['deletedRepos'] = []

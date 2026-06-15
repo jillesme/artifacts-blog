@@ -19,12 +19,12 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'The Cloudflare Artifacts — a Git-backed broadsheet',
+        title: 'The Cloudflare Artifacts Wiki — Git-backed pages',
       },
       {
         name: 'description',
         content:
-          'A tiny demo blog where every post is a real Cloudflare Artifacts Git repo — with history, forks, and git clone included.',
+          'A tiny demo wiki where every page is a real Cloudflare Artifacts Git repo — with revision history, forks, and git clone included.',
       },
       {
         name: 'theme-color',
