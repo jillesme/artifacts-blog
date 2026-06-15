@@ -190,7 +190,7 @@ export const listPages = createServerFn({ method: 'GET' }).handler(async () => {
 })
 
 export const getPage = createServerFn({ method: 'GET' })
-  .inputValidator((data: { slug: string; sha?: string }) => data)
+  .validator((data: { slug: string; sha?: string }) => data)
   .handler(async ({ data }): Promise<PageView | null> => {
     const page = await getPageBySlug(data.slug)
     if (!page) return null
@@ -211,7 +211,7 @@ export const getPage = createServerFn({ method: 'GET' })
   })
 
 export const createPage = createServerFn({ method: 'POST' })
-  .inputValidator(
+  .validator(
     (data: {
       title: string
       author?: string
@@ -251,7 +251,7 @@ export const createPage = createServerFn({ method: 'POST' })
   })
 
 export const editPage = createServerFn({ method: 'POST' })
-  .inputValidator(
+  .validator(
     (data: { slug: string; title: string; summary?: string; body: string; message?: string; editor?: string }) =>
       data,
   )
@@ -285,7 +285,7 @@ export const editPage = createServerFn({ method: 'POST' })
   })
 
 export const getHistory = createServerFn({ method: 'GET' })
-  .inputValidator((data: { slug: string }) => data)
+  .validator((data: { slug: string }) => data)
   .handler(async ({ data }): Promise<{ page: PageRow; commits: CommitEntry[] } | null> => {
     const page = await getPageBySlug(data.slug)
     if (!page) return null
@@ -294,7 +294,7 @@ export const getHistory = createServerFn({ method: 'GET' })
   })
 
 export const forkPage = createServerFn({ method: 'POST' })
-  .inputValidator((data: { slug: string; author?: string }) => data)
+  .validator((data: { slug: string; author?: string }) => data)
   .handler(async ({ data }) => {
     const source = await getPageBySlug(data.slug)
     if (!source) throw new Error(`Page not found: ${data.slug}`)
@@ -343,7 +343,7 @@ export const forkPage = createServerFn({ method: 'POST' })
  * pattern verbatim for anything with real editorial authority.
  */
 export const mintCloneToken = createServerFn({ method: 'POST' })
-  .inputValidator((data: { slug: string }) => data)
+  .validator((data: { slug: string }) => data)
   .handler(async ({ data }) => {
     const page = await getPageBySlug(data.slug)
     if (!page) throw new Error(`Page not found: ${data.slug}`)
@@ -357,7 +357,7 @@ export const mintCloneToken = createServerFn({ method: 'POST' })
   })
 
 export const listAdminState = createServerFn({ method: 'GET' })
-  .inputValidator((data?: { adminKey?: string }) => data ?? {})
+  .validator((data?: { adminKey?: string }) => data ?? {})
   .handler(async ({ data }): Promise<AdminState> => {
     assertAdmin(data.adminKey)
 
@@ -400,7 +400,7 @@ export const listAdminState = createServerFn({ method: 'GET' })
   })
 
 export const previewDeleteFamily = createServerFn({ method: 'GET' })
-  .inputValidator((data: { slug: string; adminKey?: string }) => data)
+  .validator((data: { slug: string; adminKey?: string }) => data)
   .handler(async ({ data }): Promise<PageRow[]> => {
     assertAdmin(data.adminKey)
     const family = await getPageFamily(data.slug)
@@ -409,7 +409,7 @@ export const previewDeleteFamily = createServerFn({ method: 'GET' })
   })
 
 export const deletePageFamily = createServerFn({ method: 'POST' })
-  .inputValidator(
+  .validator(
     (data: { slug: string; confirm: string; adminKey?: string }) => data,
   )
   .handler(async ({ data }): Promise<DeleteFamilyResult> => {
@@ -447,7 +447,7 @@ export const deletePageFamily = createServerFn({ method: 'POST' })
   })
 
 export const deleteOrphanArtifactRepo = createServerFn({ method: 'POST' })
-  .inputValidator(
+  .validator(
     (data: { repoName: string; confirm: string; adminKey?: string }) => data,
   )
   .handler(async ({ data }): Promise<DeleteRepoResult> => {
@@ -473,7 +473,7 @@ export const deleteOrphanArtifactRepo = createServerFn({ method: 'POST' })
   })
 
 export const deleteOrphanArtifactRepos = createServerFn({ method: 'POST' })
-  .inputValidator((data: { confirm: string; adminKey?: string }) => data)
+  .validator((data: { confirm: string; adminKey?: string }) => data)
   .handler(async ({ data }): Promise<DeleteOrphansResult> => {
     assertAdmin(data.adminKey)
     if (data.confirm !== 'DELETE ORPHANS') {

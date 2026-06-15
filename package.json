@@ -14,41 +14,35 @@
 		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {
-		"@cloudflare/vite-plugin": "^1.33.2",
-		"@tailwindcss/vite": "^4.2.4",
+		"@cloudflare/vite-plugin": "^1.40.2",
+		"@tailwindcss/vite": "^4.3.1",
 		"@tanstack/react-devtools": "latest",
 		"@tanstack/react-router": "latest",
 		"@tanstack/react-router-devtools": "latest",
 		"@tanstack/react-router-ssr-query": "latest",
 		"@tanstack/react-start": "latest",
-		"@tanstack/router-plugin": "^1.167.23",
-		"isomorphic-git": "^1.37.5",
+		"@tanstack/router-plugin": "^1.168.18",
+		"isomorphic-git": "^1.38.4",
 		"lucide-react": "^0.545.0",
-		"marked": "^18.0.2",
-		"react": "^19.2.5",
-		"react-dom": "^19.2.5",
-		"tailwindcss": "^4.2.4"
+		"marked": "^18.0.5",
+		"react": "^19.2.7",
+		"react-dom": "^19.2.7",
+		"tailwindcss": "^4.3.1"
 	},
 	"devDependencies": {
-		"@rsbuild/core": "^2.0.1",
-		"@tailwindcss/typography": "^0.5.19",
+		"@rsbuild/core": "^2.0.14",
+		"@tailwindcss/typography": "^0.5.20",
 		"@tanstack/devtools-vite": "latest",
 		"@testing-library/dom": "^10.4.1",
 		"@testing-library/react": "^16.3.2",
-		"@types/node": "^22.19.17",
-		"@types/react": "^19.2.14",
+		"@types/node": "^22.19.21",
+		"@types/react": "^19.2.17",
 		"@types/react-dom": "^19.2.3",
-		"@vitejs/plugin-react": "^6.0.1",
+		"@vitejs/plugin-react": "^6.0.2",
 		"jsdom": "^28.1.0",
 		"typescript": "^5.9.3",
-		"vite": "^8.0.10",
-		"vitest": "^3.2.4",
-		"wrangler": "^4.85.0"
-	},
-	"pnpm": {
-		"onlyBuiltDependencies": [
-			"esbuild",
-			"lightningcss"
-		]
+		"vite": "^8.0.16",
+		"vitest": "^3.2.6",
+		"wrangler": "^4.100.0"
 	}
 }
