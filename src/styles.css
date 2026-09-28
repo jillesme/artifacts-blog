@@ -1,220 +1,150 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Playfair+Display:ital,wght@0,600..900;1,600..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Libre+Franklin:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap");
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --font-sans: "Newsreader", Georgia, "Times New Roman", serif;
-  --font-display: "Fraunces", Georgia, serif;
-  --font-nameplate: "Playfair Display", "Fraunces", Georgia, serif;
-  --font-grotesk: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-nameplate: "UnifrakturMaguntia", "Old English Text MT", serif;
+  --font-grotesk: "Libre Franklin", "Franklin Gothic Medium", Arial, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 /* ──────────────────────────────────────────────────────────────────────
-   The Cloudflare Artifacts — a fusion of:
-     • The New York Times: blackletter nameplate, hairline rules,
-       column grid, drop-caps, kickers, dignified serifs.
-     • Cloudflare brand: confident orange, the signature rounded
-       "tab" block, clean white paper, charcoal headlines, Inter.
-   No glass. No gradients on text. No skeuomorphism.
+   A broadsheet printed on newsprint, with Cloudflare orange as the one
+   spot colour (the way old papers ran a single extra ink).
+   Square corners, hairline rules, justified columns, black ink.
    ────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* ── Paper & ink (NYT-clean white, Cloudflare-bold black) ── */
-  --ink: #121212;                /* near-black headlines */
-  --ink-soft: #3a3a3a;           /* body */
-  --ink-faint: #6b6b6b;          /* captions, small caps */
-  --parchment: #ffffff;          /* primary background — clean newsprint */
-  --parchment-deep: #f5f3ef;     /* inset panels */
-  --parchment-hi: #ffffff;       /* raised blocks */
-
-  /* ── Cloudflare orange family ── */
-  --cf-orange: #f6821f;          /* primary brand */
-  --cf-orange-bright: #faae40;   /* highlight / top of gradient */
-  --cf-orange-deep: #e2570d;     /* hover, hot accent */
-  --cf-orange-ink: #a23a06;      /* compressed dark version for text */
-
-  /* Map legacy tokens onto the new palette so the rest of the site
-     reads as Cloudflare orange without touching every component. */
-  --oxblood: var(--cf-orange-deep);
-  --oxblood-dark: var(--cf-orange-ink);
-  --moss: #1f6b54;               /* secondary editorial accent (forest) */
-  --terracotta: var(--cf-orange-bright);
-  --umber: #0a0a0a;              /* heavy rules, blocks */
-
-  --rule: rgba(18, 18, 18, 0.16);
-  --rule-soft: rgba(18, 18, 18, 0.08);
-  --rule-heavy: rgba(18, 18, 18, 0.9);
-
-  --selection: rgba(246, 130, 31, 0.28);
-
-  --cf-gradient: linear-gradient(135deg, #faae40 0%, #f6821f 45%, #e2570d 100%);
-  --cf-gradient-soft: linear-gradient(180deg, #fff7ec 0%, #fde6c8 100%);
-
-  --tab-radius: 14px;
-}
-
-:root[data-theme="dark"] {
-  --ink: #f1efe9;
-  --ink-soft: #c8c4ba;
-  --ink-faint: #8a857a;
-  --parchment: #0e0e10;
-  --parchment-deep: #17171a;
-  --parchment-hi: #1c1c1f;
+  --ink: #1b1a17;
+  --ink-soft: #3b3833;
+  --ink-faint: #6e695f;
+  --parchment: #f5f1e8; /* newsprint */
+  --parchment-deep: #ebe5d8; /* inset boxes */
+  --parchment-hi: #faf7f0; /* raised boxes */
 
   --cf-orange: #f6821f;
-  --cf-orange-bright: #ffbd55;
-  --cf-orange-deep: #ff6a14;
+  --cf-orange-deep: #d9620b;
+  --cf-orange-ink: #9a3f05;
+
+  /* Legacy tokens used across components */
+  --oxblood: var(--cf-orange-deep);
+  --moss: #3b3833;
+  --umber: #1b1a17;
+
+  --rule: rgba(27, 26, 23, 0.28);
+  --rule-soft: rgba(27, 26, 23, 0.12);
+
+  --selection: rgba(246, 130, 31, 0.3);
+}
+
+/* "Night edition" */
+:root[data-theme="dark"] {
+  --ink: #ece6d8;
+  --ink-soft: #c9c2b2;
+  --ink-faint: #8f887a;
+  --parchment: #16150f;
+  --parchment-deep: #201e17;
+  --parchment-hi: #1b1a13;
+  --cf-orange-deep: #f6821f;
   --cf-orange-ink: #ffb27d;
-
-  --oxblood: var(--cf-orange);
-  --oxblood-dark: var(--cf-orange-bright);
-  --moss: #6fb89d;
-  --terracotta: var(--cf-orange-bright);
-  --umber: #f1efe9;
-
-  --rule: rgba(241, 239, 233, 0.18);
-  --rule-soft: rgba(241, 239, 233, 0.08);
-  --rule-heavy: rgba(241, 239, 233, 0.85);
-
+  --moss: #c9c2b2;
+  --umber: #ece6d8;
+  --rule: rgba(236, 230, 216, 0.28);
+  --rule-soft: rgba(236, 230, 216, 0.12);
   --selection: rgba(246, 130, 31, 0.42);
-
-  --cf-gradient: linear-gradient(135deg, #ffbd55 0%, #f6821f 45%, #ff5a0c 100%);
-  --cf-gradient-soft: linear-gradient(180deg, #1f1815 0%, #2a1b10 100%);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ink: #f1efe9;
-    --ink-soft: #c8c4ba;
-    --ink-faint: #8a857a;
-    --parchment: #0e0e10;
-    --parchment-deep: #17171a;
-    --parchment-hi: #1c1c1f;
-
-    --cf-orange: #f6821f;
-    --cf-orange-bright: #ffbd55;
-    --cf-orange-deep: #ff6a14;
+    --ink: #ece6d8;
+    --ink-soft: #c9c2b2;
+    --ink-faint: #8f887a;
+    --parchment: #16150f;
+    --parchment-deep: #201e17;
+    --parchment-hi: #1b1a13;
+    --cf-orange-deep: #f6821f;
     --cf-orange-ink: #ffb27d;
-
-    --oxblood: var(--cf-orange);
-    --oxblood-dark: var(--cf-orange-bright);
-    --moss: #6fb89d;
-    --terracotta: var(--cf-orange-bright);
-    --umber: #f1efe9;
-
-    --rule: rgba(241, 239, 233, 0.18);
-    --rule-soft: rgba(241, 239, 233, 0.08);
-    --rule-heavy: rgba(241, 239, 233, 0.85);
-
+    --moss: #c9c2b2;
+    --umber: #ece6d8;
+    --rule: rgba(236, 230, 216, 0.28);
+    --rule-soft: rgba(236, 230, 216, 0.12);
     --selection: rgba(246, 130, 31, 0.42);
-
-    --cf-gradient: linear-gradient(135deg, #ffbd55 0%, #f6821f 45%, #ff5a0c 100%);
-    --cf-gradient-soft: linear-gradient(180deg, #1f1815 0%, #2a1b10 100%);
   }
 }
 
-* {
-  box-sizing: border-box;
+/* Element defaults live in the base layer so Tailwind utilities win. */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  ::selection {
+    background: var(--selection);
+    color: var(--ink);
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-optical-sizing: auto;
+    font-size: 17px;
+    line-height: 1.55;
+    background-color: var(--parchment);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  a {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--cf-orange);
+  }
+
+  a:hover {
+    color: var(--cf-orange-deep);
+  }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.84em;
+    background: var(--parchment-deep);
+    padding: 1px 5px;
+    color: var(--ink);
+  }
+
+  pre {
+    font-family: var(--font-mono);
+  }
+
+  pre code {
+    background: transparent;
+    padding: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin-block: 2rem;
+  }
 }
 
-::selection {
-  background: var(--selection);
-  color: var(--ink);
-}
-
-html,
-body,
-#app {
-  min-height: 100%;
-}
-
-body {
-  margin: 0;
-  color: var(--ink);
-  font-family: var(--font-sans);
-  font-optical-sizing: auto;
-  font-size: 17px;
-  line-height: 1.6;
-  background-color: var(--parchment);
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* No grain on white newsprint — keep it clean. A faint horizontal hairline
-   pattern at the very top (like a folded index sheet) instead. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: -1;
-  background-image:
-    radial-gradient(
-      900px 600px at 100% 0%,
-      color-mix(in oklab, var(--cf-orange-bright) 12%, transparent),
-      transparent 60%
-    );
-  opacity: 0.55;
-}
-
-:root[data-theme="dark"] body::before,
-:root.dark body::before {
-  opacity: 0.35;
-}
-
-a {
-  color: var(--cf-orange-deep);
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-  text-decoration-color: color-mix(in oklab, var(--cf-orange-deep) 45%, transparent);
-  transition: color 160ms ease, text-decoration-color 160ms ease;
-}
-
-:root[data-theme="dark"] a,
-:root.dark a {
-  color: var(--cf-orange-bright);
-  text-decoration-color: color-mix(in oklab, var(--cf-orange-bright) 50%, transparent);
-}
-
-a:hover {
-  color: var(--cf-orange);
-  text-decoration-color: var(--cf-orange);
-}
-
-code {
-  font-family: var(--font-mono);
-  font-size: 0.86em;
-  background: var(--parchment-deep);
-  border: 1px solid var(--rule-soft);
-  padding: 1px 6px;
-  border-radius: 3px;
-  color: var(--ink);
-}
-
-pre {
-  font-family: var(--font-mono);
-}
-
-pre code {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-  font-size: inherit;
-  color: inherit;
-}
-
-hr {
-  border: 0;
-  border-top: 1px solid var(--rule);
-  margin-block: 2rem;
-}
-
+@layer components {
 /* ──────────────────────────────────────────────────────────────────────
-   Layout primitives
+   Layout & rules
    ────────────────────────────────────────────────────────────────────── */
 
 .measure {
@@ -223,51 +153,47 @@ hr {
 }
 
 .measure-wide {
-  width: min(1120px, calc(100% - 2rem));
+  width: min(1180px, calc(100% - 2rem));
   margin-inline: auto;
 }
 
 .rule {
   height: 1px;
-  background: var(--rule);
-  border: 0;
-}
-
-.rule-heavy {
-  height: 2px;
-  background: var(--umber);
-  border: 0;
-  opacity: 0.9;
-}
-
-/* NYT-style double hairline beneath the masthead */
-.double-rule {
-  height: 6px;
-  border-top: 1px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
-  background: transparent;
-}
-
-/* Triple rule — one heavy, one hair, used for section breaks */
-.triple-rule {
-  position: relative;
-  height: 10px;
-}
-.triple-rule::before,
-.triple-rule::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
   background: var(--ink);
 }
-.triple-rule::before {
-  top: 0;
-  height: 2px;
+
+/* Thick-thin rule under the nameplate */
+.double-rule {
+  height: 6px;
+  border-top: 3px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
 }
-.triple-rule::after {
-  bottom: 0;
-  height: 1px;
+
+/* Section break: thin over thick */
+.triple-rule {
+  height: 6px;
+  border-top: 1px solid var(--ink);
+  border-bottom: 3px solid var(--ink);
+}
+
+/* Vertical column rules between grid columns */
+.col-rules > * + * {
+  border-left: 1px solid var(--rule);
+}
+
+@media (max-width: 639px) {
+  .col-rules > * + * {
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+    padding-top: 1.5rem;
+  }
+}
+
+/* Justified newspaper body copy */
+.newsprint {
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }
 
 /* ──────────────────────────────────────────────────────────────────────
@@ -276,100 +202,59 @@ hr {
 
 .display {
   font-family: var(--font-display);
-  font-optical-sizing: auto;
-  font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 0;
-  letter-spacing: -0.02em;
-  line-height: 1.02;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
   color: var(--ink);
 }
 
-.display-wonk {
-  font-variation-settings: "opsz" 144, "SOFT" 80, "WONK" 1;
-}
-
-/* Nameplate — refined high-contrast didone, NYT mood without the blackletter */
 .nameplate {
   font-family: var(--font-nameplate);
-  font-weight: 900;
-  font-style: normal;
-  letter-spacing: -0.012em;
-  line-height: 0.95;
+  font-weight: 400;
+  line-height: 1;
   color: var(--ink);
 }
 
-/* Optional italic flourish word inside the nameplate */
 .nameplate em {
-  font-style: italic;
-  font-weight: 800;
-  color: var(--cf-orange);
+  font-style: normal;
 }
 
-.smallcaps {
-  font-family: var(--font-grotesk);
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  font-weight: 600;
-  font-size: 0.7rem;
-  color: var(--ink-faint);
-}
-
-.kicker {
+.smallcaps,
+.kicker,
+.folio {
   font-family: var(--font-grotesk);
   font-weight: 700;
-  font-size: 0.72rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--cf-orange-deep);
-}
-
-.folio {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-faint);
 }
 
+.kicker {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.folio {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
 .byline {
-  font-family: var(--font-display);
+  font-family: var(--font-sans);
   font-style: italic;
-  font-weight: 400;
   color: var(--ink-soft);
 }
 
-/* Editorial drop-cap on the first paragraph of a rendered page */
+/* Black drop cap, three lines deep */
 .editorial-body > p:first-of-type::first-letter {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-variation-settings: "opsz" 144, "SOFT" 0, "WONK" 0;
+  font-weight: 900;
   float: left;
-  font-size: 5.4rem;
-  line-height: 0.86;
-  padding: 0.35rem 0.65rem 0 0;
-  margin-top: 0.12rem;
-  color: var(--cf-orange);
-}
-
-/* Number the wiki page list like a table of contents */
-.toc {
-  counter-reset: toc;
-}
-
-.toc-entry {
-  counter-increment: toc;
-  position: relative;
-}
-
-.toc-entry::before {
-  content: counter(toc, decimal-leading-zero);
-  position: absolute;
-  left: 0;
-  top: 0.4rem;
-  font-family: var(--font-grotesk);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  color: var(--cf-orange);
+  font-size: 4.6rem;
+  line-height: 0.82;
+  padding: 0.3rem 0.5rem 0 0;
+  color: var(--ink);
 }
 
 /* ──────────────────────────────────────────────────────────────────────
@@ -377,159 +262,109 @@ hr {
    ────────────────────────────────────────────────────────────────────── */
 
 .masthead {
-  border-bottom: 1px solid var(--rule);
   background: var(--parchment);
 }
 
-.nav-link {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  text-decoration: none;
-  color: var(--ink-soft);
-  font-family: var(--font-grotesk);
-  font-weight: 600;
-  font-size: 0.78rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  padding-block: 0.25rem;
+/* The orange spot-colour line at the very top of the paper */
+.spot-rule {
+  height: 4px;
+  background: var(--cf-orange);
 }
 
-.nav-link::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -3px;
-  height: 2px;
-  background: var(--cf-orange);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+/* Boxed "ears" either side of the nameplate */
+.ear {
+  border: 1px solid var(--ink);
+  padding: 0.45rem 0.6rem;
+  font-family: var(--font-grotesk);
+  font-size: 0.66rem;
+  line-height: 1.35;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+
+.ear strong {
+  display: block;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.nav-link {
+  font-family: var(--font-grotesk);
+  font-weight: 700;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  padding-block: 0.2rem;
+  border-bottom: 2px solid transparent;
 }
 
 .nav-link:hover,
 .nav-link.is-active {
   color: var(--ink);
+  border-bottom-color: var(--cf-orange);
 }
 
-.nav-link:hover::after,
-.nav-link.is-active::after {
-  transform: scaleX(1);
-}
-
-/* ─── Cloudflare "tab" ribbon — a small orange chip flanked by long
-       hairlines, echoing the brand sheet without consuming the layout. ─── */
-.hero-rails {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-}
-.hero-rails::before,
-.hero-rails::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--rule);
-}
-
-.hero-tab {
-  display: inline-flex;
-  align-items: center;
-  font-family: var(--font-grotesk);
-  font-weight: 700;
-  font-size: 0.7rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: #fff;
-  background: var(--cf-orange);
-  padding: 0.45rem 1.1rem;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-
-/* Primary button — solid Cloudflare orange, pill, NYT confidence */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  font-family: var(--font-grotesk);
-  font-weight: 700;
-  font-size: 0.78rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #fff;
-  background: var(--cf-orange);
-  border: 1px solid var(--cf-orange);
-  padding: 0.78rem 1.2rem;
-  border-radius: 999px;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
-}
-
-.btn-primary:hover {
-  background: var(--cf-orange-deep);
-  border-color: var(--cf-orange-deep);
-  color: #fff;
-}
-
-.btn-primary:active {
-  transform: translateY(1px);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Ghost button — charcoal outline, rounded, secondary actions */
+.btn-primary,
 .btn-ghost {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
   font-family: var(--font-grotesk);
   font-weight: 700;
-  font-size: 0.78rem;
-  letter-spacing: 0.14em;
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--ink);
-  background: transparent;
+  padding: 0.7rem 1.05rem;
   border: 1px solid var(--ink);
-  padding: 0.78rem 1.2rem;
-  border-radius: 999px;
+  border-radius: 0;
   text-decoration: none;
   cursor: pointer;
-  transition: background 180ms ease, color 180ms ease;
+}
+
+.btn-primary {
+  color: #fff;
+  background: var(--cf-orange);
+  border-color: var(--cf-orange);
+}
+
+.btn-primary:hover {
+  color: #fff;
+  background: var(--cf-orange-deep);
+  border-color: var(--cf-orange-deep);
+}
+
+.btn-ghost {
+  color: var(--ink);
+  background: transparent;
 }
 
 .btn-ghost:hover {
-  background: var(--ink);
   color: var(--parchment);
+  background: var(--ink);
 }
 
+.btn-primary:disabled,
 .btn-ghost:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Form fields — flat, hairline-bordered, light parchment fill */
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .field-label {
   font-family: var(--font-grotesk);
   font-size: 0.7rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: var(--ink-faint);
+  letter-spacing: 0.08em;
+  color: var(--ink);
 }
 
 .field-input,
@@ -537,18 +372,17 @@ hr {
   font-family: var(--font-sans);
   font-size: 1.02rem;
   color: var(--ink);
-  background: var(--parchment);
+  background: var(--parchment-hi);
   border: 1px solid var(--rule);
-  border-radius: 6px;
-  padding: 0.7rem 0.85rem;
+  border-radius: 0;
+  padding: 0.65rem 0.8rem;
   outline: none;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .field-input:focus,
 .field-textarea:focus {
-  border-color: var(--cf-orange);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--cf-orange) 22%, transparent);
+  border-color: var(--ink);
+  box-shadow: inset 0 -2px 0 var(--cf-orange);
 }
 
 .field-textarea {
@@ -559,108 +393,58 @@ hr {
   resize: vertical;
 }
 
-/* Error note */
 .note-error {
-  font-family: var(--font-sans);
   font-size: 0.92rem;
   color: var(--cf-orange-ink);
-  background: color-mix(in oklab, var(--cf-orange) 12%, var(--parchment));
-  border-left: 3px solid var(--cf-orange);
-  border-radius: 4px;
-  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--cf-orange-deep);
+  padding: 0.65rem 0.85rem;
 }
 
-/* Terminal block — kept dark, with a Cloudflare orange prompt */
+/* Terminal block stays dark, like a pasted-in wire printout */
 .terminal {
   font-family: var(--font-mono);
   font-size: 0.84rem;
   line-height: 1.7;
-  background: #0c0c0e;
-  color: #f3f1ea;
-  padding: 1.1rem 1.2rem;
+  background: #121210;
+  color: #f1ece0;
+  padding: 1rem 1.1rem;
   overflow-x: auto;
-  border: 1px solid #0c0c0e;
-  border-radius: 8px;
-  position: relative;
+  border-left: 4px solid var(--cf-orange);
 }
 
 .terminal::before {
   content: "$";
-  display: inline-block;
-  color: var(--cf-orange-bright);
+  color: var(--cf-orange);
   margin-right: 0.7rem;
   user-select: none;
 }
 
-/* Hover tag — tiny inline badges (SHA, author, etc.) */
+/* Small inline labels (SHA, fork-of, etc.) */
 .tag {
   font-family: var(--font-mono);
   font-size: 0.68rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-  padding: 2px 8px;
+  color: var(--ink-soft);
+  padding: 1px 6px;
   border: 1px solid var(--rule);
-  border-radius: 999px;
-  background: var(--parchment);
 }
 
 .tag-accent {
-  color: var(--cf-orange-deep);
-  border-color: color-mix(in oklab, var(--cf-orange) 50%, var(--rule));
-  background: color-mix(in oklab, var(--cf-orange) 8%, var(--parchment));
+  color: var(--cf-orange-ink);
+  border-color: var(--cf-orange);
 }
 
 .tag-moss {
-  color: var(--moss);
-  border-color: color-mix(in oklab, var(--moss) 45%, var(--rule));
-  background: color-mix(in oklab, var(--moss) 6%, var(--parchment));
+  font-family: var(--font-grotesk);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-
-
-/* ──────────────────────────────────────────────────────────────────────
-   Animations
-   ────────────────────────────────────────────────────────────────────── */
-
-.rise {
-  animation: rise 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.ink-in {
-  animation: ink 880ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes ink {
-  from {
-    opacity: 0;
-    filter: blur(3px);
-  }
-  to {
-    opacity: 1;
-    filter: blur(0);
-  }
-}
-
-/* Print-style dinkus (ornamental section break) */
+/* Section break: a short centred rule */
 .dinkus {
-  text-align: center;
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  letter-spacing: 1.4rem;
-  color: var(--cf-orange);
-  margin: 3rem 0 2.5rem;
-  padding-left: 1.4rem; /* compensate for final letter-spacing */
-  user-select: none;
+  width: 5rem;
+  height: 1px;
+  margin: 3rem auto 2.5rem;
+  background: var(--ink);
+}
 }

@@ -83,56 +83,49 @@ function PageView() {
       ) : null}
 
       {/* ── Article head ──────────────────────────────────────────── */}
-      <header className="ink-in mb-10">
-        <p className="folio mb-4">
-          {formatDate(view.page.created_at)} · created by{' '}
-          <span className="text-[var(--ink-soft)]">{view.page.author}</span>
-          {view.page.forked_from ? (
-            <>
-              {' · '}
-              <span className="normal-case tracking-normal">
-                forked from{' '}
-                <Link
-                  to="/wiki/$slug"
-                  params={{ slug: view.page.forked_from }}
-                  search={{ v: undefined }}
-                >
-                  {view.page.forked_from}
-                </Link>
-              </span>
-            </>
-          ) : null}
-        </p>
-
-        <h1 className="display text-[clamp(2.5rem,6vw,4.5rem)] font-semibold text-[var(--ink)]">
+      <header className="mb-8">
+        <h1 className="display m-0 text-[clamp(2.5rem,6vw,4.25rem)]">
           {view.page.title}
         </h1>
 
         {view.page.summary ? (
-          <p className="byline mt-5 text-xl leading-relaxed text-[var(--ink-soft)] sm:text-2xl">
+          <p className="byline mt-4 mb-0 text-xl leading-snug sm:text-2xl">
             {view.page.summary}
           </p>
         ) : null}
 
-        <div className="mt-6 flex items-center gap-3">
-          <span className="tag tag-accent">@{view.sha.slice(0, 7)}</span>
-          <div className="h-px flex-1 bg-[var(--rule)]" />
+        <div className="mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-y border-[var(--ink)] py-2">
+          <span className="kicker">By {view.page.author}</span>
+          <span className="folio">{formatDate(view.page.created_at)}</span>
+          {view.page.forked_from ? (
+            <span className="folio">
+              Forked from{' '}
+              <Link
+                to="/wiki/$slug"
+                params={{ slug: view.page.forked_from }}
+                search={{ v: undefined }}
+              >
+                {view.page.forked_from}
+              </Link>
+            </span>
+          ) : null}
+          <span className="tag tag-accent ml-auto">@{view.sha.slice(0, 7)}</span>
         </div>
       </header>
 
       {/* ── Article body ──────────────────────────────────────────── */}
       <article
-        className="editorial-body prose prose-lg max-w-none text-[var(--ink)]
-          prose-headings:font-display prose-headings:text-[var(--ink)]
+        className="editorial-body newsprint prose prose-lg max-w-none text-[var(--ink)]
+          prose-headings:font-display prose-headings:text-[var(--ink)] prose-headings:text-left
           prose-headings:tracking-tight
-          prose-p:leading-[1.75]
+          prose-p:leading-[1.7]
           prose-p:text-[var(--ink)]
           prose-strong:text-[var(--ink)] prose-strong:font-semibold
           prose-em:text-[var(--ink)]
-          prose-a:text-[var(--oxblood)] prose-a:underline prose-a:decoration-1 prose-a:underline-offset-2
+          prose-a:text-[var(--ink)] prose-a:decoration-[var(--cf-orange)] prose-a:underline prose-a:decoration-1 prose-a:underline-offset-2
           prose-blockquote:border-l-2 prose-blockquote:border-[var(--oxblood)]
           prose-blockquote:text-[var(--ink-soft)] prose-blockquote:font-normal prose-blockquote:not-italic
-          prose-code:bg-[var(--parchment-deep)] prose-code:border prose-code:border-[var(--rule-soft)]
+          prose-code:bg-[var(--parchment-deep)] prose-code:font-normal
           prose-code:px-1.5 prose-code:py-[1px] prose-code:text-[0.9em] prose-code:rounded-none
           prose-code:text-[var(--ink)] prose-code:before:content-none prose-code:after:content-none
           prose-pre:bg-[var(--umber)] prose-pre:text-[var(--parchment-hi)] prose-pre:rounded-none
@@ -141,9 +134,7 @@ function PageView() {
         dangerouslySetInnerHTML={{ __html: view.html }}
       />
 
-      <div className="dinkus" aria-hidden>
-        ❦
-      </div>
+      <div className="dinkus" aria-hidden />
 
       {/* ── Article footer: actions ──────────────────────────────── */}
       <section

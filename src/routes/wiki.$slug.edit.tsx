@@ -66,11 +66,11 @@ function EditPage() {
         </Link>
       </div>
 
-      <header className="ink-in mb-10">
+      <header className="mb-10">
         <p className="folio mb-4">
           Revise · current SHA @{view.sha.slice(0, 7)}
         </p>
-        <h1 className="display text-[clamp(2.25rem,5.5vw,3.5rem)] font-semibold text-[var(--ink)]">
+        <h1 className="display text-[clamp(2.25rem,5.5vw,3.5rem)] text-[var(--ink)]">
           {view.page.title}
         </h1>
         <p className="byline mt-5 text-lg leading-relaxed text-[var(--ink-soft)]">

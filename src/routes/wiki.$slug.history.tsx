@@ -38,9 +38,9 @@ function History() {
         </Link>
       </div>
 
-      <header className="ink-in mb-10 border-b border-[var(--rule)] pb-6">
+      <header className="mb-10 border-b border-[var(--rule)] pb-6">
         <p className="folio mb-3">Revision history</p>
-        <h1 className="display text-[clamp(2.25rem,5.5vw,3.75rem)] font-semibold text-[var(--ink)]">
+        <h1 className="display text-[clamp(2.25rem,5.5vw,3.75rem)] text-[var(--ink)]">
           {page.title}
         </h1>
         <p className="byline mt-4 text-lg leading-relaxed text-[var(--ink-soft)]">
@@ -63,8 +63,7 @@ function History() {
           return (
             <li
               key={c.sha}
-              className="rise relative mb-10 pl-2"
-              style={{ animationDelay: `${idx * 60}ms` }}
+              className="relative mb-10 pl-2"
             >
               {/* Dot on the rule */}
               <span

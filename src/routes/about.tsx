@@ -7,18 +7,11 @@ export const Route = createFileRoute('/about')({
 function About() {
   return (
     <main className="measure px-4 pb-16 pt-10 sm:pt-14">
-      <header className="ink-in mb-10 border-b border-[var(--rule)] pb-6">
+      <header className="mb-10 border-b border-[var(--rule)] pb-6">
         <p className="folio mb-3">About the wiki</p>
-        <h1 className="display text-[clamp(2.5rem,7vw,5rem)] font-semibold text-[var(--ink)]">
+        <h1 className="display text-[clamp(2.5rem,7vw,5rem)] text-[var(--ink)]">
           A wiki where every page is a{' '}
-          <em
-            className="italic"
-            style={{
-              fontVariationSettings: '"opsz" 144, "SOFT" 100, "WONK" 1',
-            }}
-          >
-            git repo
-          </em>
+git repo
           .
         </h1>
         <p className="byline mt-5 text-xl leading-relaxed text-[var(--ink-soft)]">

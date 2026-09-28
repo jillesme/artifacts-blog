@@ -205,11 +205,11 @@ function JillesAdmin() {
 
   return (
     <main className="measure-wide px-4 pb-20 pt-10 sm:pt-14">
-      <header className="ink-in mb-10 border-b border-[var(--umber)] pb-8">
+      <header className="mb-10 border-b border-[var(--umber)] pb-8">
         <p className="folio mb-4">/jilles · hidden composition-room ledger</p>
         <div className="grid gap-6 sm:grid-cols-[1.2fr_0.8fr] sm:items-end">
           <div>
-            <h1 className="display display-wonk text-[clamp(2.6rem,7vw,5.5rem)] font-semibold text-[var(--ink)]">
+            <h1 className="display display-wonk text-[clamp(2.6rem,7vw,5.5rem)] text-[var(--ink)]">
               Burn after reading.
             </h1>
             <p className="byline mt-5 max-w-2xl text-xl leading-relaxed text-[var(--ink-soft)]">
@@ -252,19 +252,19 @@ function JillesAdmin() {
       <section className="mb-10 grid gap-4 sm:grid-cols-4">
         <div className="border-y border-[var(--rule)] py-4">
           <p className="folio">D1 pages</p>
-          <p className="display mt-1 text-4xl font-semibold">{state?.pages.length ?? '—'}</p>
+          <p className="display mt-1 text-4xl">{state?.pages.length ?? '—'}</p>
         </div>
         <div className="border-y border-[var(--rule)] py-4">
           <p className="folio">Artifacts repos</p>
-          <p className="display mt-1 text-4xl font-semibold">{state?.repos.length ?? '—'}</p>
+          <p className="display mt-1 text-4xl">{state?.repos.length ?? '—'}</p>
         </div>
         <div className="border-y border-[var(--rule)] py-4">
           <p className="folio">Orphans</p>
-          <p className="display mt-1 text-4xl font-semibold">{orphanRepos.length}</p>
+          <p className="display mt-1 text-4xl">{orphanRepos.length}</p>
         </div>
         <div className="border-y border-[var(--rule)] py-4">
           <p className="folio">Key configured</p>
-          <p className="display mt-1 text-4xl font-semibold">
+          <p className="display mt-1 text-4xl">
             {state?.adminKeyConfigured ? 'yes' : 'no'}
           </p>
         </div>
@@ -275,7 +275,7 @@ function JillesAdmin() {
           <header className="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-[var(--rule)] pb-4">
             <div>
               <p className="folio">Cascade deletion</p>
-              <h2 id="pages-heading" className="display text-3xl font-semibold">
+              <h2 id="pages-heading" className="display text-3xl">
                 Indexed pages & forks
               </h2>
             </div>
@@ -305,7 +305,7 @@ function JillesAdmin() {
                       <span className="tag">{page.fork_count} forks</span>
                     ) : null}
                   </div>
-                  <h3 className="display truncate text-2xl font-semibold">
+                  <h3 className="display truncate text-2xl">
                     <Link
                       to="/wiki/$slug"
                       params={{ slug: page.slug }}
@@ -341,7 +341,7 @@ function JillesAdmin() {
             className="border-2 border-[var(--oxblood)] bg-[var(--parchment-hi)] p-5"
           >
             <p className="folio mb-2 text-[var(--oxblood)]">Destructive action</p>
-            <h2 id="danger-heading" className="display text-3xl font-semibold">
+            <h2 id="danger-heading" className="display text-3xl">
               Delete a lineage
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">
@@ -404,7 +404,7 @@ function JillesAdmin() {
             className="mt-6 border border-[var(--rule)] bg-[var(--parchment-hi)] p-5"
           >
             <p className="folio mb-2">Orphan repo cleanup</p>
-            <h2 className="display text-2xl font-semibold">Artifacts only</h2>
+            <h2 className="display text-2xl">Artifacts only</h2>
             <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">
               For repos not referenced by D1. Indexed repos are rejected here;
               use the lineage deleter instead.
@@ -451,7 +451,7 @@ function JillesAdmin() {
             className="mt-6 border border-[var(--oxblood)] bg-[var(--parchment-hi)] p-5"
           >
             <p className="folio mb-2 text-[var(--oxblood)]">Bulk cleanup</p>
-            <h2 className="display text-2xl font-semibold">Delete all orphans</h2>
+            <h2 className="display text-2xl">Delete all orphans</h2>
             <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">
               Deletes every Artifacts repo that is not referenced by the D1
               <code>pages</code> table. Currently staged:{' '}

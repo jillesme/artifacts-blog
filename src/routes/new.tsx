@@ -52,9 +52,9 @@ function NewPage() {
 
   return (
     <main className="measure px-4 pb-16 pt-10 sm:pt-14">
-      <header className="ink-in mb-10">
+      <header className="mb-10">
         <p className="folio mb-4">The wiki desk · new page</p>
-        <h1 className="display text-[clamp(2.5rem,6vw,4rem)] font-semibold text-[var(--ink)]">
+        <h1 className="display text-[clamp(2.5rem,6vw,4rem)] text-[var(--ink)]">
           Create a new wiki page.
         </h1>
         <p className="byline mt-5 text-lg leading-relaxed text-[var(--ink-soft)]">

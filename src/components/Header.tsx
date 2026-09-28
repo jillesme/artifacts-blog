@@ -2,80 +2,78 @@ import { Link } from '@tanstack/react-router'
 import ThemeToggle from './ThemeToggle'
 
 function todayLine(): string {
-  const d = new Date()
-  const weekday = d.toLocaleDateString(undefined, { weekday: 'long' })
-  const month = d.toLocaleDateString(undefined, { month: 'long' })
-  const day = d.getDate()
-  const year = d.getFullYear()
-  return `${weekday}, ${month} ${day}, ${year}`
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
 }
 
 export default function Header() {
   return (
-    <header className="masthead px-4">
-      {/* ── Top eyebrow: dateline · edition · weather (NYT-style) ──────── */}
-      <div className="measure-wide hidden items-center justify-between border-b border-[var(--rule-soft)] py-2 text-[11px] sm:flex">
-        <p className="smallcaps m-0 !text-[10px]">
-          Vol. I &nbsp;·&nbsp; No. 01 &nbsp;·&nbsp; {todayLine()}
-        </p>
-        <p className="smallcaps m-0 !text-[10px]">
-          Edge edition &nbsp;·&nbsp; Pushed continuously
-        </p>
-      </div>
+    <header className="masthead">
+      <div className="spot-rule" />
 
-      {/* ── Nameplate ─────────────────────────────────────────────────── */}
-      <div className="measure-wide flex flex-col items-center gap-2 pt-6 text-center sm:pt-7">
-        <p className="kicker">The Git-Backed Wiki</p>
-        <Link
-          to="/"
-          aria-label="The Cloudflare Artifacts Wiki — home"
-          className="nameplate text-[clamp(2.4rem,7.2vw,4.8rem)] no-underline"
-        >
-          The <em>Cloudflare</em> Artifacts Wiki
-        </Link>
-        <p className="smallcaps mt-1">
-          Every page is a real Git repository · est. MMXXVI
-        </p>
-      </div>
-
-      <div className="measure-wide mt-5">
-        <div className="double-rule" />
-      </div>
-
-      {/* ── Section nav ──────────────────────────────────────────────── */}
-      <div className="measure-wide flex items-center justify-between gap-4 py-3">
-        <nav
-          aria-label="Primary"
-          className="flex flex-wrap items-center gap-x-6 gap-y-2"
-        >
+      <div className="measure-wide px-4">
+        {/* Nameplate with boxed ears, like a proper front page */}
+        <div className="grid items-center gap-4 pt-6 pb-4 sm:grid-cols-[150px_1fr_150px]">
+          <div className="ear hidden sm:block">
+            <strong>Edge edition</strong>
+            Served from every Cloudflare data center
+          </div>
           <Link
             to="/"
-            className="nav-link"
-            activeProps={{ className: 'nav-link is-active' }}
-            activeOptions={{ exact: true }}
+            aria-label="The Cloudflare Artifacts Wiki, home"
+            className="nameplate text-center text-[clamp(1.9rem,4.4vw,3.9rem)] no-underline hover:text-[var(--ink)] sm:whitespace-nowrap"
           >
-            Index
+            The Cloudflare Artifacts Wiki
           </Link>
-          <Link
-            to="/new"
-            className="nav-link"
-            activeProps={{ className: 'nav-link is-active' }}
-          >
-            New Page
-          </Link>
-          <Link
-            to="/about"
-            className="nav-link"
-            activeProps={{ className: 'nav-link is-active' }}
-          >
-            About
-          </Link>
-        </nav>
-        <ThemeToggle />
-      </div>
+          <div className="ear hidden text-right sm:block">
+            <strong>Price</strong>
+            One <code className="bg-transparent p-0 normal-case">git push</code>
+          </div>
+        </div>
 
-      <div className="measure-wide">
-        <div className="rule" />
+        {/* Dateline strip */}
+        <div className="flex items-center justify-between border-y border-[var(--ink)] py-1.5">
+          <p className="folio m-0 text-[var(--ink)]">{todayLine()}</p>
+          <p className="folio m-0 hidden text-[var(--ink)] sm:block">
+            Every page is a Git repository
+          </p>
+          <p className="folio m-0 text-[var(--ink)]">
+            Powered by Cloudflare Artifacts
+          </p>
+        </div>
+
+        {/* Section nav */}
+        <div className="flex items-center justify-between gap-4 border-b-[3px] border-[var(--ink)] py-2.5">
+          <nav aria-label="Primary" className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <Link
+              to="/"
+              className="nav-link"
+              activeProps={{ className: 'nav-link is-active' }}
+              activeOptions={{ exact: true }}
+            >
+              Front page
+            </Link>
+            <Link
+              to="/new"
+              className="nav-link"
+              activeProps={{ className: 'nav-link is-active' }}
+            >
+              New page
+            </Link>
+            <Link
+              to="/about"
+              className="nav-link"
+              activeProps={{ className: 'nav-link is-active' }}
+            >
+              About
+            </Link>
+          </nav>
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   )
