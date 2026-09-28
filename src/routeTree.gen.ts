@@ -9,22 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as NewRouteImport } from './routes/new'
-import { Route as JillesRouteImport } from './routes/jilles'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as JillesRouteImport } from './routes/jilles'
+import { Route as NewRouteImport } from './routes/new'
 import { Route as WikiSlugIndexRouteImport } from './routes/wiki.$slug.index'
-import { Route as WikiSlugHistoryRouteImport } from './routes/wiki.$slug.history'
 import { Route as WikiSlugEditRouteImport } from './routes/wiki.$slug.edit'
+import { Route as WikiSlugHistoryRouteImport } from './routes/wiki.$slug.history'
 
-const NewRoute = NewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const JillesRoute = JillesRouteImport.update({
-  id: '/jilles',
-  path: '/jilles',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -32,9 +27,14 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const JillesRoute = JillesRouteImport.update({
+  id: '/jilles',
+  path: '/jilles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewRoute = NewRouteImport.update({
+  id: '/new',
+  path: '/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WikiSlugIndexRoute = WikiSlugIndexRouteImport.update({
@@ -42,14 +42,14 @@ const WikiSlugIndexRoute = WikiSlugIndexRouteImport.update({
   path: '/wiki/$slug/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WikiSlugHistoryRoute = WikiSlugHistoryRouteImport.update({
-  id: '/wiki/$slug/history',
-  path: '/wiki/$slug/history',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const WikiSlugEditRoute = WikiSlugEditRouteImport.update({
   id: '/wiki/$slug/edit',
   path: '/wiki/$slug/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WikiSlugHistoryRoute = WikiSlugHistoryRouteImport.update({
+  id: '/wiki/$slug/history',
+  path: '/wiki/$slug/history',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -123,18 +123,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/new': {
-      id: '/new'
-      path: '/new'
-      fullPath: '/new'
-      preLoaderRoute: typeof NewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/jilles': {
-      id: '/jilles'
-      path: '/jilles'
-      fullPath: '/jilles'
-      preLoaderRoute: typeof JillesRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -144,11 +137,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/jilles': {
+      id: '/jilles'
+      path: '/jilles'
+      fullPath: '/jilles'
+      preLoaderRoute: typeof JillesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/new': {
+      id: '/new'
+      path: '/new'
+      fullPath: '/new'
+      preLoaderRoute: typeof NewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/wiki/$slug/': {
@@ -158,18 +158,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WikiSlugIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/wiki/$slug/history': {
-      id: '/wiki/$slug/history'
-      path: '/wiki/$slug/history'
-      fullPath: '/wiki/$slug/history'
-      preLoaderRoute: typeof WikiSlugHistoryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/wiki/$slug/edit': {
       id: '/wiki/$slug/edit'
       path: '/wiki/$slug/edit'
       fullPath: '/wiki/$slug/edit'
       preLoaderRoute: typeof WikiSlugEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wiki/$slug/history': {
+      id: '/wiki/$slug/history'
+      path: '/wiki/$slug/history'
+      fullPath: '/wiki/$slug/history'
+      preLoaderRoute: typeof WikiSlugHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
   }

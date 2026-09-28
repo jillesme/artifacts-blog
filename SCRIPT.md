@@ -11,7 +11,7 @@ Developers
 
 ## Takeaway
 
-Artifacts are a new primitive for you and your agents to use the power of Git in your applications.
+Artifacts are a new primitive for you and your agents to use the power of Git inside your applications.
 
 ## Notes for Future Videos
 
@@ -40,25 +40,25 @@ Holy shit. Artifacts are insane once you get them. Game changer.
 
 Today I’ll show you the power of Artifacts. Let’s get right into it.
 
-## Demo: Wiki Entries as Git Repositories
+## Demo: Wiki Pages as Git Repositories
 
-I’m going to create a new wiki entry, update it, and then show the commit.
+I’m going to create a new wiki page, update it, and then show the commit.
 
-This is crazy, right? Each wiki entry is a repository with commits.
+This is crazy, right? Each wiki page is a repository with commits.
 
-Without Artifacts, you could either store each version of a blog post in the database, which is not efficient, or store diffs, but that gets complex fast. At that point, you’re basically reimplementing Git.
+Without Artifacts, you could either store each version of a wiki page in the database, which is not efficient, or store diffs, but that gets complex fast. At that point, you’re basically reimplementing Git.
 
 But wait, I said we can use Git, right? So can we easily fork?
 
 Yes. Check it out.
 
-I can fork the wiki entry, make a change, and now I have a new version that still has Git behind it.
+I can fork the wiki page into a brand-new repository. Then I can edit that fork independently, and it still has Git behind it.
 
 Very cool. But wait, there’s more.
 
 Actually, what I am about to show you next absolutely blew my mind.
 
-What’s the first thing you do with an existing Git repository? You pull it.
+What’s the first thing you do with an existing Git repository? You clone it.
 
 And when you make changes?
 
@@ -66,17 +66,17 @@ Could it be?
 
 ## Demo: Clone, Edit, and Push
 
-I’m going to mint a clone command, clone this Artifact locally, update the entry, commit the change, push it, and refresh the fork.
+I’m going to mint a clone command, clone this Artifact locally, update the page, commit the change, push it, and refresh the fork.
 
 [Pause]
 
 We are living in the future.
 
-We now have the power of Git inside of your applications.
+We now have the power of Git inside your applications.
 
-Here it’s a wiki entry, but you can see how this can apply to anything that uses the power of Git, like configuration updates, multi-user changes, and document conflicts.
+Here it’s a wiki page, but you can see how this can apply to anything that benefits from Git, like configuration updates, multi-user changes, and document conflicts.
 
-And because it’s just Git, you can use any Git client to interact with Artifacts.
+And because it’s just Git over HTTPS, you can use any Git client that supports token-based auth to interact with Artifacts.
 
 ## Why Git?
 
@@ -98,23 +98,29 @@ Let me walk you through the important parts to show you how easy it is.
 
 The project has an Artifacts binding in `wrangler.jsonc`.
 
-The main logic is in `artifacts.ts`.
+The main Git logic is in `src/server/artifactsGit.ts`.
+
+The TanStack server functions that call into those helpers live in `src/server/pages.ts`.
 
 It uses `node:fs`, which is supported in Workers, and `isomorphic-git` to interact with the repositories.
 
 The important binding is `env.ARTIFACTS`.
 
-From there, the app can get an Artifact, create a token, create a post, add files, commit changes, and read posts back out.
+From there, the app can create a repo with `env.ARTIFACTS.create()`, get an existing repo with `env.ARTIFACTS.get()`, and then mint short-lived tokens with `repo.createToken()`.
+
+The app uses that to create a page repo, add files, commit changes, read history, fork repos, and render pages back out.
 
 That’s the core idea: your application can create and manage Git repositories as part of its normal workflow.
 
 ## What Else Is Possible?
 
-There is more to discover. We even have an event hub.
+There is more to discover. Artifacts also supports event subscriptions.
 
-That means you can run actions when events happen.
+That means you can subscribe to repository events and run actions when things happen.
 
-For example, when I commit a change to a post, it could automatically run an agent to spell check it.
+For example, when someone pushes a commit to a page, you could trigger a review agent, run a build, or automatically spell check the content.
+
+That’s not part of this demo, but it would be a great follow-up.
 
 Can you see the possibilities?
 

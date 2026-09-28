@@ -7,7 +7,7 @@
 	"name": "artifacts-wiki",
 	"account_id": "e47294a4cfb02c21f673410b87b93428",
 	// Bumped to a date that supports Artifacts
-	"compatibility_date": "2026-05-26",
+	"compatibility_date": "2026-09-28",
 	"compatibility_flags": [
 		"nodejs_compat"
 	],

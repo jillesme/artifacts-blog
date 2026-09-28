@@ -1,52 +1,23 @@
 /**
  * Git operations against Cloudflare Artifacts repos, from a Worker.
  *
- * Artifacts exposes each repo as a standard Git HTTPS remote. We use
- * isomorphic-git to clone, read, edit, commit and push — entirely from
- * the Worker request handler.
+ * - `env.ARTIFACTS` creates repos, forks them, and mints repo-scoped tokens.
+ * - Each repo is a standard Git HTTPS remote, so we use isomorphic-git to
+ *   clone, commit, and push from inside the request handler.
+ * - Files live in Workers' built-in per-request `node:fs` (/tmp), enabled by
+ *   `nodejs_compat`. https://developers.cloudflare.com/workers/runtime-apis/nodejs/fs/
  *
- * Filesystem: we use Workers' built-in `node:fs` virtual filesystem.
- *   - Enabled automatically with `nodejs_compat` + compatibility_date ≥ 2025-09-01
- *   - Per-request in-memory `/tmp` that counts toward the Worker memory budget
- *   - Zero extra dependencies — no hand-rolled MemoryFS needed
- *   Docs: https://developers.cloudflare.com/workers/runtime-apis/nodejs/fs/
- *
- * Why not store content in KV or R2?
- *   Because then "history", "diff", "fork", and "git clone from your wiki"
- *   all become features we have to reinvent. Artifacts + Git gives them to
- *   us for free.
+ * Docs: https://developers.cloudflare.com/artifacts/examples/isomorphic-git/
  */
 
 import fs from 'node:fs'
 import git from 'isomorphic-git'
 import http from 'isomorphic-git/http/web'
 
-export const AUTHOR = {
-  name: 'Artifacts Wiki',
-  email: 'wiki@artifacts.example',
-}
-
-export const PAGE_FILE = 'page.md'
-export const META_FILE = 'meta.json'
-
-/**
- * Each git operation gets its own fresh workdir under /tmp. The Workers VFS
- * is per-request, but using unique subdirs also guards against reentrancy
- * (e.g. a server function doing two reads in parallel).
- */
-function newWorkdir(): string {
-  return `/tmp/artifacts-${crypto.randomUUID()}`
-}
-
-/** Strip the `?expires=<unix>` suffix that Artifacts tokens carry. */
-export function cleanToken(token: string): string {
-  return token.split('?expires=')[0]
-}
-
-function authFor(token: string) {
-  const secret = cleanToken(token)
-  return () => ({ username: 'x', password: secret })
-}
+const PAGE_FILE = 'page.md'
+const META_FILE = 'meta.json'
+const BRANCH = 'main'
+const TOKEN_TTL_SECONDS = 15 * 60
 
 /** Metadata we store in `meta.json` alongside the markdown body. */
 export interface PageMeta {
@@ -57,7 +28,7 @@ export interface PageMeta {
   forkedFrom?: string
 }
 
-export interface CreatePageResult {
+export interface RepoRef {
   repoName: string
   remote: string
   sha: string
@@ -67,7 +38,6 @@ export interface RenderedPage {
   markdown: string
   meta: PageMeta
   sha: string
-  ref: string | null
 }
 
 export interface CommitEntry {
@@ -77,146 +47,163 @@ export interface CommitEntry {
   timestamp: number
 }
 
-async function mintReadToken(env: Env, repoName: string): Promise<string> {
+// ─────────────────────────────────────────────────────────────────────────────
+// Tokens
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Artifacts tokens look like `art_v1_<secret>?expires=<unix>`.
+ * Git auth only wants the secret part.
+ */
+export function tokenSecret(token: string): string {
+  return token.split('?expires=')[0]
+}
+
+/** Mint a short-lived, repo-scoped token for Git access. */
+export async function mintToken(
+  env: Env,
+  repoName: string,
+  scope: 'read' | 'write',
+) {
   const repo = await env.ARTIFACTS.get(repoName)
-  const token = await repo.createToken('read', 900)
-  return token.plaintext
+  return repo.createToken(scope, TOKEN_TTL_SECONDS)
 }
 
-async function mintWriteToken(env: Env, repoName: string): Promise<string> {
-  const repo = await env.ARTIFACTS.get(repoName)
-  const token = await repo.createToken('write', 900)
-  return token.plaintext
+// ─────────────────────────────────────────────────────────────────────────────
+// Local Git helpers (isomorphic-git + node:fs)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function onAuth(token: string) {
+  return () => ({ username: 'x', password: tokenSecret(token) })
 }
 
-function authorFor(name?: string) {
-  const trimmed = name?.trim()
-  return trimmed
-    ? { name: trimmed.slice(0, 80), email: `${slugEmail(trimmed)}@artifacts.example` }
-    : AUTHOR
+/** Fresh workdir per operation, so parallel reads in one request don't collide. */
+async function newWorkdir(): Promise<string> {
+  const dir = `/tmp/artifacts-${crypto.randomUUID()}`
+  await fs.promises.mkdir(dir, { recursive: true })
+  return dir
 }
 
-function slugEmail(input: string): string {
-  return (
-    input
+async function cloneMain(remote: string, token: string, depth = 1) {
+  const dir = await newWorkdir()
+  await git.clone({
+    fs,
+    http,
+    dir,
+    url: remote,
+    ref: BRANCH,
+    singleBranch: true,
+    depth,
+    onAuth: onAuth(token),
+  })
+  return dir
+}
+
+/** Write files into the workdir and stage them. */
+async function writeAndStage(dir: string, files: Record<string, string>) {
+  for (const [filepath, contents] of Object.entries(files)) {
+    await fs.promises.writeFile(`${dir}/${filepath}`, contents)
+    await git.add({ fs, dir, filepath })
+  }
+}
+
+function pageFiles(body: string, meta: PageMeta): Record<string, string> {
+  return {
+    [PAGE_FILE]: body,
+    [META_FILE]: JSON.stringify(meta, null, 2) + '\n',
+  }
+}
+
+function commitAuthor(name: string) {
+  const email =
+    name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '') || 'contributor'
-  )
+  return { name: name.slice(0, 80), email: `${email}@artifacts.example` }
 }
 
-/**
- * Create a new Artifacts repo, commit `page.md` + `meta.json`, and push `main`.
- * Returns the repo name, remote URL, and the first commit's SHA.
- */
+async function commitAndPush(
+  dir: string,
+  remote: string,
+  token: string,
+  message: string,
+  author: string,
+): Promise<string> {
+  const sha = await git.commit({
+    fs,
+    dir,
+    message,
+    author: commitAuthor(author),
+  })
+  await git.push({
+    fs,
+    http,
+    dir,
+    url: remote,
+    ref: BRANCH,
+    onAuth: onAuth(token),
+  })
+  return sha
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Page operations
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Create a new Artifacts repo with `page.md` + `meta.json` and push `main`. */
 export async function createPageRepo(
   env: Env,
   repoName: string,
   body: string,
   meta: PageMeta,
-): Promise<CreatePageResult> {
-  const created = await env.ARTIFACTS.create(repoName, {
+): Promise<RepoRef> {
+  const repo = await env.ARTIFACTS.create(repoName, {
     description: meta.title,
   })
-  const token = created.token
 
-  const dir = newWorkdir()
-  await fs.promises.mkdir(dir, { recursive: true })
-  await git.init({ fs, dir, defaultBranch: 'main' })
-
-  await fs.promises.writeFile(`${dir}/${PAGE_FILE}`, body)
-  await fs.promises.writeFile(
-    `${dir}/${META_FILE}`,
-    JSON.stringify(meta, null, 2) + '\n',
-  )
-  await fs.promises.writeFile(
-    `${dir}/README.md`,
-    `# ${meta.title}\n\nThis wiki page lives in a Cloudflare Artifacts repo.\n\nClone it, edit \`page.md\`, and push to suggest changes.\n`,
-  )
-
-  await git.add({ fs, dir, filepath: PAGE_FILE })
-  await git.add({ fs, dir, filepath: META_FILE })
-  await git.add({ fs, dir, filepath: 'README.md' })
-
-  const sha = await git.commit({
-    fs,
-    dir,
-    message: `Create page: ${meta.title}`,
-    author: authorFor(meta.author),
+  const dir = await newWorkdir()
+  await git.init({ fs, dir, defaultBranch: BRANCH })
+  await writeAndStage(dir, {
+    ...pageFiles(body, meta),
+    'README.md': `# ${meta.title}\n\nThis wiki page lives in a Cloudflare Artifacts repo.\n\nClone it, edit \`${PAGE_FILE}\`, and push to update the page.\n`,
   })
 
-  await git.push({
-    fs,
-    http,
+  const sha = await commitAndPush(
     dir,
-    url: created.remote,
-    ref: 'main',
-    onAuth: authFor(token),
-  })
-
-  return { repoName: created.name, remote: created.remote, sha }
+    repo.remote,
+    repo.token,
+    `Create page: ${meta.title}`,
+    meta.author,
+  )
+  return { repoName: repo.name, remote: repo.remote, sha }
 }
 
-/**
- * Read `page.md` + `meta.json` from the repo at a given commit (or tip of main).
- * We do a shallow clone, which is fast enough for wiki-sized repos.
- */
+/** Read `page.md` + `meta.json` at a given commit, or at the tip of `main`. */
 export async function readPage(
   env: Env,
   repoName: string,
   remote: string,
   atSha?: string,
 ): Promise<RenderedPage> {
-  const token = await mintReadToken(env, repoName)
-  const dir = newWorkdir()
-  await fs.promises.mkdir(dir, { recursive: true })
-  await git.clone({
-    fs,
-    http,
-    dir,
-    url: remote,
-    ref: 'main',
-    singleBranch: true,
-    depth: atSha ? 100 : 1,
-    onAuth: authFor(token),
-  })
+  const { plaintext } = await mintToken(env, repoName, 'read')
+  const dir = await cloneMain(remote, plaintext, atSha ? 100 : 1)
+  const oid = atSha ?? (await git.resolveRef({ fs, dir, ref: BRANCH }))
 
-  let oid = atSha
-  if (!oid) {
-    oid = await git.resolveRef({ fs, dir, ref: 'main' })
+  const readText = async (filepath: string) => {
+    const { blob } = await git.readBlob({ fs, dir, oid, filepath })
+    return new TextDecoder().decode(blob)
   }
 
-  const pageBytes = await git.readBlob({
-    fs,
-    dir,
-    oid,
-    filepath: PAGE_FILE,
-  })
-  let metaText = '{}'
-  try {
-    const metaBytes = await git.readBlob({
-      fs,
-      dir,
-      oid,
-      filepath: META_FILE,
-    })
-    metaText = new TextDecoder().decode(metaBytes.blob)
-  } catch {
-    // meta.json may not exist on older commits — fall back silently.
-  }
+  // meta.json may be missing if someone removed it via `git push`.
+  const meta = await readText(META_FILE)
+    .then((text) => JSON.parse(text) as PageMeta)
+    .catch(() => ({}) as PageMeta)
 
-  const meta = JSON.parse(metaText) as PageMeta
-  return {
-    markdown: new TextDecoder().decode(pageBytes.blob),
-    meta,
-    sha: oid,
-    ref: atSha ? null : 'main',
-  }
+  return { markdown: await readText(PAGE_FILE), meta, sha: oid }
 }
 
-/**
- * Commit a new version of `page.md`, push, and return the new HEAD SHA.
- */
+/** Commit a new version of the page, push, and return the new HEAD SHA. */
 export async function updatePage(
   env: Env,
   repoName: string,
@@ -224,72 +211,23 @@ export async function updatePage(
   body: string,
   meta: PageMeta,
   message: string,
-  editor?: string,
+  editor: string,
 ): Promise<string> {
-  const token = await mintWriteToken(env, repoName)
-  const dir = newWorkdir()
-  await fs.promises.mkdir(dir, { recursive: true })
-  await git.clone({
-    fs,
-    http,
-    dir,
-    url: remote,
-    ref: 'main',
-    singleBranch: true,
-    depth: 1,
-    onAuth: authFor(token),
-  })
-
-  await fs.promises.writeFile(`${dir}/${PAGE_FILE}`, body)
-  await fs.promises.writeFile(
-    `${dir}/${META_FILE}`,
-    JSON.stringify(meta, null, 2) + '\n',
-  )
-
-  await git.add({ fs, dir, filepath: PAGE_FILE })
-  await git.add({ fs, dir, filepath: META_FILE })
-
-  const sha = await git.commit({
-    fs,
-    dir,
-    message,
-    author: authorFor(editor),
-  })
-
-  await git.push({
-    fs,
-    http,
-    dir,
-    url: remote,
-    ref: 'main',
-    onAuth: authFor(token),
-  })
-
-  return sha
+  const { plaintext } = await mintToken(env, repoName, 'write')
+  const dir = await cloneMain(remote, plaintext)
+  await writeAndStage(dir, pageFiles(body, meta))
+  return commitAndPush(dir, remote, plaintext, message, editor)
 }
 
-/**
- * Read the last N commits (OID + message + author + timestamp).
- */
+/** Read the last `depth` commits on `main`, newest first. */
 export async function readHistory(
   env: Env,
   repoName: string,
   remote: string,
   depth = 50,
 ): Promise<CommitEntry[]> {
-  const token = await mintReadToken(env, repoName)
-  const dir = newWorkdir()
-  await fs.promises.mkdir(dir, { recursive: true })
-  await git.clone({
-    fs,
-    http,
-    dir,
-    url: remote,
-    ref: 'main',
-    singleBranch: true,
-    depth,
-    onAuth: authFor(token),
-  })
+  const { plaintext } = await mintToken(env, repoName, 'read')
+  const dir = await cloneMain(remote, plaintext, depth)
   const log = await git.log({ fs, dir, depth })
   return log.map((c) => ({
     sha: c.oid,
@@ -300,36 +238,23 @@ export async function readHistory(
 }
 
 /**
- * Fork an existing Artifacts repo into a new one. The new repo has its own
- * remote, its own tokens, and diverges independently.
+ * Fork an existing repo into a brand-new one. The fork has its own remote and
+ * tokens, and diverges independently from the source.
  */
 export async function forkPageRepo(
   env: Env,
   sourceRepoName: string,
   targetRepoName: string,
-  description?: string,
-): Promise<{ repoName: string; remote: string; sha: string }> {
+  description: string,
+): Promise<RepoRef> {
   const source = await env.ARTIFACTS.get(sourceRepoName)
-  const forked = await source.fork(targetRepoName, {
+  const fork = await source.fork(targetRepoName, {
     description,
     defaultBranchOnly: true,
   })
 
-  // The fork starts at the same SHA as the source's default branch.
-  // Resolve it by doing a minimal shallow clone.
-  const token = forked.token
-  const dir = newWorkdir()
-  await fs.promises.mkdir(dir, { recursive: true })
-  await git.clone({
-    fs,
-    http,
-    dir,
-    url: forked.remote,
-    ref: 'main',
-    singleBranch: true,
-    depth: 1,
-    onAuth: authFor(token),
-  })
-  const sha = await git.resolveRef({ fs, dir, ref: 'main' })
-  return { repoName: forked.name, remote: forked.remote, sha }
+  // The fork starts at the source's HEAD; a shallow clone tells us that SHA.
+  const dir = await cloneMain(fork.remote, fork.token)
+  const sha = await git.resolveRef({ fs, dir, ref: BRANCH })
+  return { repoName: fork.name, remote: fork.remote, sha }
 }

@@ -1,22 +1,16 @@
 import { useState } from 'react'
-import { mintCloneToken } from '../server/pages'
-import { Copy, Check } from 'lucide-react'
-
-interface Props {
-  slug: string
-}
+import { Check, Copy } from 'lucide-react'
+import { mintCloneCommand } from '../server/pages'
 
 /**
  * The "git clone your page" block. On click we ask the Worker to mint a
  * short-lived read/write Artifacts token for this repo, then render the
  * ready-to-paste command in a terminal-style block.
  */
-export default function CloneSnippet({ slug }: Props) {
-  const [info, setInfo] = useState<{
-    remote: string
-    token: string
-    expiresAt: string
-  } | null>(null)
+export default function CloneSnippet({ slug }: { slug: string }) {
+  const [info, setInfo] = useState<{ command: string; expiresAt: string } | null>(
+    null,
+  )
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,8 +19,7 @@ export default function CloneSnippet({ slug }: Props) {
     setBusy(true)
     setError(null)
     try {
-      const res = await mintCloneToken({ data: { slug } })
-      setInfo(res)
+      setInfo(await mintCloneCommand({ data: { slug } }))
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -34,16 +27,9 @@ export default function CloneSnippet({ slug }: Props) {
     }
   }
 
-  const secret = info ? info.token.split('?expires=')[0] : ''
-  // `--config` (unlike `-c`) persists the header into the cloned repo's
-  // .git/config so subsequent `git push` / `git fetch` reuse it automatically.
-  const command = info
-    ? `git clone --config http.extraHeader="Authorization: Bearer ${secret}" ${info.remote}`
-    : ''
-
   async function copy() {
-    if (!command) return
-    await navigator.clipboard.writeText(command)
+    if (!info) return
+    await navigator.clipboard.writeText(info.command)
     setCopied(true)
     setTimeout(() => setCopied(false), 1400)
   }
@@ -84,7 +70,7 @@ export default function CloneSnippet({ slug }: Props) {
       </div>
 
       <pre className="terminal">
-        <code>{command}</code>
+        <code>{info.command}</code>
       </pre>
 
       <p className="mt-2 text-[12px] leading-relaxed text-[var(--ink-faint)]">

@@ -15,11 +15,14 @@ import { marked } from 'marked'
 import {
   createPageRepo,
   forkPageRepo,
+  mintToken,
   readHistory,
   readPage,
+  tokenSecret,
   updatePage,
   type CommitEntry,
   type PageMeta,
+  type RepoRef,
 } from './artifactsGit'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -131,6 +134,77 @@ async function getPageBySlug(slug: string): Promise<PageRow | null> {
   return row ?? null
 }
 
+async function insertPage(
+  row: Pick<PageRow, 'slug' | 'title' | 'author' | 'summary' | 'forked_from'>,
+  repo: RepoRef,
+): Promise<void> {
+  const now = Date.now()
+  await env.DB.prepare(
+    `INSERT INTO pages (slug, title, author, summary, namespace, repo_name, remote, current_sha, forked_from, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 'wiki', ?, ?, ?, ?, ?, ?)`,
+  )
+    .bind(
+      row.slug,
+      row.title,
+      row.author,
+      row.summary,
+      repo.repoName,
+      repo.remote,
+      repo.sha,
+      row.forked_from,
+      now,
+      now,
+    )
+    .run()
+}
+
+/**
+ * A plain `git push` moves the repo forward without going through `editPage`.
+ * The repo is the source of truth, so when we see a newer HEAD (and maybe new
+ * meta.json values) we bring the D1 index row back in sync.
+ */
+async function syncPageHead(
+  page: PageRow,
+  sha: string,
+  meta?: Partial<PageMeta>,
+): Promise<PageRow> {
+  const next: PageRow = {
+    ...page,
+    title: meta?.title?.trim() || page.title,
+    author: meta?.author?.trim() || page.author,
+    summary: meta ? meta.summary?.trim() || null : page.summary,
+    current_sha: sha,
+  }
+  const changed =
+    next.current_sha !== page.current_sha ||
+    next.title !== page.title ||
+    next.author !== page.author ||
+    next.summary !== page.summary
+  if (!changed) return page
+
+  if (next.current_sha !== page.current_sha) next.updated_at = Date.now()
+  await env.DB.prepare(
+    `UPDATE pages
+     SET title = ?, author = ?, summary = ?, current_sha = ?, updated_at = ?
+     WHERE id = ?`,
+  )
+    .bind(next.title, next.author, next.summary, next.current_sha, next.updated_at, page.id)
+    .run()
+  return next
+}
+
+/** Page through every repo in the Artifacts namespace. */
+async function listAllRepos() {
+  const repos: ArtifactsRepoListResult['repos'] = []
+  let cursor: string | undefined
+  do {
+    const page = await env.ARTIFACTS.list({ limit: 200, cursor })
+    repos.push(...page.repos)
+    cursor = page.cursor
+  } while (cursor)
+  return repos
+}
+
 function configuredAdminKey(): string | null {
   const configured = (env as typeof env & { ADMIN_DELETE_KEY?: string })
     .ADMIN_DELETE_KEY
@@ -159,7 +233,7 @@ async function getPageFamily(rootSlug: string): Promise<PageRow[]> {
     .bind(rootSlug)
     .all<PageRow>()
 
-  return (result.results ?? []) as PageRow[]
+  return result.results
 }
 
 async function deletePageFamilyRows(rootSlug: string): Promise<number> {
@@ -186,21 +260,21 @@ export const listPages = createServerFn({ method: 'GET' }).handler(async () => {
   const result = await env.DB.prepare(
     'SELECT * FROM pages ORDER BY updated_at DESC LIMIT 100',
   ).all<PageRow>()
-  return (result.results ?? []) as PageRow[]
+  return result.results
 })
 
 export const getPage = createServerFn({ method: 'GET' })
   .validator((data: { slug: string; sha?: string }) => data)
   .handler(async ({ data }): Promise<PageView | null> => {
-    const page = await getPageBySlug(data.slug)
-    if (!page) return null
+    const found = await getPageBySlug(data.slug)
+    if (!found) return null
 
-    const rendered = await readPage(
-      env,
-      page.repo_name,
-      page.remote,
-      data.sha,
-    )
+    const rendered = await readPage(env, found.repo_name, found.remote, data.sha)
+    // Viewing the latest version? Make sure D1 reflects any direct `git push`.
+    const page = data.sha
+      ? found
+      : await syncPageHead(found, rendered.sha, rendered.meta)
+
     return {
       page,
       markdown: rendered.markdown,
@@ -212,12 +286,8 @@ export const getPage = createServerFn({ method: 'GET' })
 
 export const createPage = createServerFn({ method: 'POST' })
   .validator(
-    (data: {
-      title: string
-      author?: string
-      summary?: string
-      body: string
-    }) => data,
+    (data: { title: string; author?: string; summary?: string; body: string }) =>
+      data,
   )
   .handler(async ({ data }) => {
     const title = data.title.trim()
@@ -228,32 +298,28 @@ export const createPage = createServerFn({ method: 'POST' })
     const author = (data.author?.trim() || 'anonymous').slice(0, 60)
     const summary = data.summary?.trim() || null
     const slug = await uniqueSlug(slugify(title))
-    const repoName = repoNameFor(slug)
-    const now = Date.now()
 
-    const meta: PageMeta = {
+    const repo = await createPageRepo(env, repoNameFor(slug), body, {
       title,
       author,
       summary: summary ?? undefined,
-      createdAt: new Date(now).toISOString(),
-    }
-
-    const { remote, sha } = await createPageRepo(env, repoName, body, meta)
-
-    await env.DB.prepare(
-      `INSERT INTO pages (slug, title, author, summary, namespace, repo_name, remote, current_sha, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-      .bind(slug, title, author, summary, 'wiki', repoName, remote, sha, now, now)
-      .run()
+      createdAt: new Date().toISOString(),
+    })
+    await insertPage({ slug, title, author, summary, forked_from: null }, repo)
 
     return { slug }
   })
 
 export const editPage = createServerFn({ method: 'POST' })
   .validator(
-    (data: { slug: string; title: string; summary?: string; body: string; message?: string; editor?: string }) =>
-      data,
+    (data: {
+      slug: string
+      title: string
+      summary?: string
+      body: string
+      message?: string
+      editor?: string
+    }) => data,
   )
   .handler(async ({ data }) => {
     const page = await getPageBySlug(data.slug)
@@ -270,28 +336,35 @@ export const editPage = createServerFn({ method: 'POST' })
       createdAt: new Date(page.created_at).toISOString(),
       forkedFrom: page.forked_from ?? undefined,
     }
-
     const message = (data.message?.trim() || `Edit: ${title}`).slice(0, 140)
-    const editor = (data.editor?.trim() || page.author || 'anonymous').slice(0, 80)
-    const sha = await updatePage(env, page.repo_name, page.remote, body, meta, message, editor)
+    const editor = (data.editor?.trim() || page.author).slice(0, 80)
 
-    await env.DB.prepare(
-      `UPDATE pages SET title = ?, summary = ?, current_sha = ?, updated_at = ? WHERE id = ?`,
+    const sha = await updatePage(
+      env,
+      page.repo_name,
+      page.remote,
+      body,
+      meta,
+      message,
+      editor,
     )
-      .bind(title, summary ?? null, sha, Date.now(), page.id)
-      .run()
+    await syncPageHead(page, sha, meta)
 
     return { slug: page.slug, sha }
   })
 
 export const getHistory = createServerFn({ method: 'GET' })
   .validator((data: { slug: string }) => data)
-  .handler(async ({ data }): Promise<{ page: PageRow; commits: CommitEntry[] } | null> => {
-    const page = await getPageBySlug(data.slug)
-    if (!page) return null
-    const commits = await readHistory(env, page.repo_name, page.remote)
-    return { page, commits }
-  })
+  .handler(
+    async ({ data }): Promise<{ page: PageRow; commits: CommitEntry[] } | null> => {
+      const found = await getPageBySlug(data.slug)
+      if (!found) return null
+      const commits = await readHistory(env, found.repo_name, found.remote)
+      // Keep the "Current" marker right after direct `git push`es.
+      const page = commits[0] ? await syncPageHead(found, commits[0].sha) : found
+      return { page, commits }
+    },
+  )
 
 export const forkPage = createServerFn({ method: 'POST' })
   .validator((data: { slug: string; author?: string }) => data)
@@ -299,59 +372,45 @@ export const forkPage = createServerFn({ method: 'POST' })
     const source = await getPageBySlug(data.slug)
     if (!source) throw new Error(`Page not found: ${data.slug}`)
 
-    const forkSlugBase = `${source.slug}-fork`
-    const slug = await uniqueSlug(forkSlugBase)
-    const repoName = repoNameFor(slug)
-    const author = (data.author?.trim() || 'anonymous').slice(0, 60)
-
-    const { remote, sha } = await forkPageRepo(
+    const slug = await uniqueSlug(`${source.slug}-fork`)
+    const repo = await forkPageRepo(
       env,
       source.repo_name,
-      repoName,
+      repoNameFor(slug),
       `Fork of ${source.title}`,
     )
-
-    const now = Date.now()
-    await env.DB.prepare(
-      `INSERT INTO pages (slug, title, author, summary, namespace, repo_name, remote, current_sha, forked_from, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-      .bind(
+    await insertPage(
+      {
         slug,
-        `Fork: ${source.title}`,
-        author,
-        source.summary,
-        'wiki',
-        repoName,
-        remote,
-        sha,
-        source.slug,
-        now,
-        now,
-      )
-      .run()
+        title: `Fork: ${source.title}`,
+        author: (data.author?.trim() || 'anonymous').slice(0, 60),
+        summary: source.summary,
+        forked_from: source.slug,
+      },
+      repo,
+    )
 
     return { slug }
   })
 
 /**
- * Mint a short-lived read/write token so a visitor can both `git clone` and
- * `git push` to the page's repo.
+ * Mint a short-lived write token and return a ready-to-paste `git clone`.
  *
-  * NOTE: this is a public, unauthenticated demo — anyone loading the wiki page
- * can request a token and push commits directly to `main`. Don't reuse this
- * pattern verbatim for anything with real editorial authority.
+ * `--config` (unlike `-c`) persists the auth header into the clone's
+ * .git/config, so a later `git push` just works.
+ *
+ * NOTE: this is a public, unauthenticated demo. Anyone can mint a token and
+ * push to `main`. Gate this behind real auth in anything production-like.
  */
-export const mintCloneToken = createServerFn({ method: 'POST' })
+export const mintCloneCommand = createServerFn({ method: 'POST' })
   .validator((data: { slug: string }) => data)
   .handler(async ({ data }) => {
     const page = await getPageBySlug(data.slug)
     if (!page) throw new Error(`Page not found: ${data.slug}`)
-    const repo = await env.ARTIFACTS.get(page.repo_name)
-    const token = await repo.createToken('write', 900)
+    const token = await mintToken(env, page.repo_name, 'write')
+    const header = `Authorization: Bearer ${tokenSecret(token.plaintext)}`
     return {
-      remote: page.remote,
-      token: token.plaintext,
+      command: `git clone --config http.extraHeader="${header}" ${page.remote}`,
       expiresAt: token.expiresAt,
     }
   })
@@ -368,29 +427,13 @@ export const listAdminState = createServerFn({ method: 'GET' })
         ORDER BY p.updated_at DESC
        LIMIT 500`,
     ).all<AdminPageRow>()
-    const pages = (pageResult.results ?? []) as AdminPageRow[]
+    const pages = pageResult.results
 
     const slugByRepo = new Map(pages.map((page) => [page.repo_name, page.slug]))
-    const repos: AdminRepoRow[] = []
-    let cursor: string | undefined
-    do {
-      const repoPage = await env.ARTIFACTS.list({ limit: 200, cursor })
-      repos.push(
-        ...repoPage.repos.map((repo) => ({
-          id: repo.id,
-          name: repo.name,
-          description: repo.description,
-          defaultBranch: repo.defaultBranch,
-          createdAt: repo.createdAt,
-          updatedAt: repo.updatedAt,
-          lastPushAt: repo.lastPushAt,
-          source: repo.source,
-          readOnly: repo.readOnly,
-          indexedSlug: slugByRepo.get(repo.name) ?? null,
-        })),
-      )
-      cursor = repoPage.cursor
-    } while (cursor)
+    const repos: AdminRepoRow[] = (await listAllRepos()).map((repo) => ({
+      ...repo,
+      indexedSlug: slugByRepo.get(repo.name) ?? null,
+    }))
 
     return {
       pages,
@@ -484,22 +527,12 @@ export const deleteOrphanArtifactRepos = createServerFn({ method: 'POST' })
       'SELECT repo_name FROM pages LIMIT 10000',
     ).all<{ repo_name: string }>()
     const indexed = new Set(
-      ((indexedResult.results ?? []) as { repo_name: string }[]).map(
-        (row) => row.repo_name,
-      ),
+      indexedResult.results.map((row) => row.repo_name),
     )
 
-    const orphanNames: string[] = []
-    let cursor: string | undefined
-    do {
-      const repoPage = await env.ARTIFACTS.list({ limit: 200, cursor })
-      orphanNames.push(
-        ...repoPage.repos
-          .map((repo) => repo.name)
-          .filter((name) => !indexed.has(name)),
-      )
-      cursor = repoPage.cursor
-    } while (cursor)
+    const orphanNames = (await listAllRepos())
+      .map((repo) => repo.name)
+      .filter((name) => !indexed.has(name))
 
     const deletedRepos: DeleteOrphansResult['deletedRepos'] = []
     for (const name of orphanNames) {
