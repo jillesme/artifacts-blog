@@ -29,7 +29,7 @@ The important files:
 pnpm install
 pnpm exec wrangler d1 migrations apply artifacts-wiki-db --remote
 pnpm dev      # http://localhost:3000
-pnpm deploy
+pnpm run deploy
 ```
 
 `/jilles` is an unlinked admin page for deleting pages and orphaned repos. Set an `ADMIN_DELETE_KEY` secret to protect it.
